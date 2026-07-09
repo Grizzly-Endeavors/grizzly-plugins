@@ -1,0 +1,13 @@
+{
+  "name": "grizzly-misc",
+  "description": "Hyper-specific skills bound to a particular tool, engine, project, or environment: Bevy UI, PinchTab browser automation, Jules delegation, Residuum brand, and homelab deploys. Install only where relevant.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Grizzly Endeavors",
+    "email": "bearflinn@gmail.com"
+  },
+  "homepage": "https://github.com/Grizzly-Endeavors/grizzly-plugins",
+  "repository": "https://github.com/Grizzly-Endeavors/grizzly-plugins",
+  "license": "MIT",
+  "keywords": ["skills", "bevy", "browser-automation", "delegation", "homelab", "brand"]
+}
