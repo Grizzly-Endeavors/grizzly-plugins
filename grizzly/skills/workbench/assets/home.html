@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workbench</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0f1116;
+  --surface:   #161922;
+  --surface-2: #1b2030;
+  --border:    #262a36;
+  --accent:    #4c7dff;
+  --accent-bg: rgba(76, 125, 255, 0.10);
+  --green:     #34c77b;
+  --text:      #e6e8ee;
+  --muted:     #7e8494;
+  --dim:       #3f4455;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+}
+
+html { font-size: 15px; }
+
+body {
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--dim) 1px, transparent 1px);
+  background-size: 28px 28px;
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.55;
+  min-height: 100vh;
+}
+
+/* thin accent rule at very top */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--accent) 35%, var(--accent) 65%, transparent 100%);
+  opacity: 0.55;
+  z-index: 10;
+}
+
+.wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 3.25rem 1.75rem 5rem;
+}
+
+/* ── header ── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 3rem;
+  flex-wrap: wrap;
+  animation: slide-down 0.3s ease both;
+}
+
+.wordmark {
+  font-family: var(--mono);
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  line-height: 1;
+}
+
+.wordmark .prefix {
+  color: var(--accent);
+  opacity: 0.7;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.28rem 0.75rem 0.28rem 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+  transition: border-color 0.2s;
+}
+
+.status-pill:hover { border-color: #3d4560; }
+
+.pulse {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+  animation: glow 2.8s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%,100% { box-shadow: 0 0 0 0 rgba(52,199,123,.6); }
+  50%      { box-shadow: 0 0 0 4px rgba(52,199,123,0); }
+}
+
+/* ── section header / count ── */
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1.1rem;
+  animation: fade-up 0.25s ease both 0.06s;
+}
+
+.count-badge {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.count-badge .n { color: var(--accent); }
+
+.rule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
+}
+
+/* ── grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+  gap: 0.65rem;
+}
+
+/* ── cards ── */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  padding: 1.05rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+  transition: border-color 0.16s, background 0.16s, transform 0.16s, box-shadow 0.16s;
+  animation: fade-up 0.3s ease both;
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 10% 10%, var(--accent-bg) 0%, transparent 65%);
+  opacity: 0;
+  transition: opacity 0.22s;
+  pointer-events: none;
+}
+
+.card:hover {
+  border-color: var(--accent);
+  background: var(--surface-2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 28px rgba(76,125,255,.10), 0 2px 8px rgba(0,0,0,.35);
+}
+
+.card:hover::after { opacity: 1; }
+
+.card .title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  position: relative;
+  z-index: 1;
+}
+
+.card .path {
+  font-family: var(--mono);
+  font-size: 0.685rem;
+  color: var(--muted);
+  position: relative;
+  z-index: 1;
+}
+
+/* stagger up to 20 */
+.card:nth-child(1)  { animation-delay: .04s }
+.card:nth-child(2)  { animation-delay: .08s }
+.card:nth-child(3)  { animation-delay: .12s }
+.card:nth-child(4)  { animation-delay: .16s }
+.card:nth-child(5)  { animation-delay: .20s }
+.card:nth-child(6)  { animation-delay: .24s }
+.card:nth-child(7)  { animation-delay: .28s }
+.card:nth-child(8)  { animation-delay: .32s }
+.card:nth-child(9)  { animation-delay: .36s }
+.card:nth-child(10) { animation-delay: .40s }
+.card:nth-child(11) { animation-delay: .44s }
+.card:nth-child(12) { animation-delay: .48s }
+.card:nth-child(13) { animation-delay: .52s }
+.card:nth-child(14) { animation-delay: .56s }
+.card:nth-child(15) { animation-delay: .60s }
+.card:nth-child(16) { animation-delay: .64s }
+.card:nth-child(17) { animation-delay: .68s }
+.card:nth-child(18) { animation-delay: .72s }
+.card:nth-child(19) { animation-delay: .76s }
+.card:nth-child(20) { animation-delay: .80s }
+
+/* ── empty state ── */
+.empty {
+  padding: 4rem 2rem;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  text-align: center;
+  animation: fade-up 0.3s ease both 0.1s;
+}
+
+.empty-glyph {
+  display: block;
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  opacity: 0.3;
+}
+
+.empty h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 0.45rem;
+}
+
+.empty p {
+  font-size: 0.8rem;
+  color: var(--dim);
+  line-height: 1.75;
+}
+
+.empty code {
+  font-family: var(--mono);
+  font-size: 0.82em;
+  color: var(--accent);
+  background: var(--accent-bg);
+  padding: 0.1em 0.38em;
+  border-radius: 4px;
+}
+
+/* ── footer ── */
+footer {
+  margin-top: 3.5rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 0.67rem;
+  color: var(--dim);
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+footer .sep { color: var(--border); user-select: none; }
+
+footer code {
+  color: var(--accent);
+  background: var(--accent-bg);
+  padding: 0.05em 0.3em;
+  border-radius: 3px;
+  font-family: inherit;
+}
+
+/* ── keyframes ── */
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="wordmark"><span class="prefix">~/</span>workbench</div>
+    <div class="status-pill">
+      <span class="pulse"></span>
+      <span>__HOST__:__PORT__</span>
+    </div>
+  </header>
+
+  <div class="section-head">
+    <span class="count-badge"><span class="n">__COUNT__</span> tool__PLURAL__</span>
+    <span class="rule"></span>
+  </div>
+
+  __GRID__
+
+  <footer>
+    <span>server.py</span>
+    <span class="sep">·</span>
+    <span>live reload on</span>
+    <span class="sep">·</span>
+    <span>drop <code>.html</code> into <code>tools/</code> to add</span>
+  </footer>
+
+</div>
+__LIVERELOAD__
+</body>
+</html>

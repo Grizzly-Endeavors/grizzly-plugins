@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Welcome to workbench</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0f1116;
+  --surface:   #161922;
+  --border:    #262a36;
+  --accent:    #4c7dff;
+  --accent-bg: rgba(76, 125, 255, 0.09);
+  --green:     #34c77b;
+  --text:      #e6e8ee;
+  --muted:     #7e8494;
+  --dim:       #3f4455;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+}
+
+html { font-size: 15px; }
+
+body {
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--dim) 1px, transparent 1px);
+  background-size: 28px 28px;
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.55;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--accent) 35%, var(--accent) 65%, transparent 100%);
+  opacity: 0.55;
+  z-index: 10;
+}
+
+/* ── nav ── */
+nav {
+  padding: 1.5rem 2rem;
+  display: flex;
+  align-items: center;
+  animation: fade-in 0.3s ease both;
+}
+
+.home-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.home-link:hover {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+.home-link .arrow { font-style: normal; }
+
+/* ── main layout ── */
+main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.75rem 4rem;
+}
+
+.panel {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── clock section ── */
+.clock-wrap {
+  text-align: center;
+  padding: 2.75rem 2rem;
+  border: 1px solid var(--border);
+  border-radius: 14px 14px 0 0;
+  background: var(--surface);
+  position: relative;
+  overflow: hidden;
+  animation: fade-up 0.35s ease both 0.1s;
+}
+
+/* ambient glow behind the clock */
+.clock-wrap::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 280px; height: 120px;
+  background: radial-gradient(ellipse, rgba(76,125,255,.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.clock-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+#clock {
+  font-family: var(--mono);
+  font-size: clamp(2.4rem, 8vw, 3.6rem);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  color: var(--accent);
+  line-height: 1;
+  position: relative;
+  text-shadow: 0 0 40px rgba(76,125,255,.4);
+}
+
+.clock-sub {
+  margin-top: 0.85rem;
+  font-size: 0.73rem;
+  color: var(--muted);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.js-dot {
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+}
+
+/* ── info section ── */
+.info {
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 14px 14px;
+  background: color-mix(in srgb, var(--surface) 60%, var(--bg) 40%);
+  padding: 1.75rem 2rem;
+  animation: fade-up 0.35s ease both 0.18s;
+}
+
+.info h1 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 0.55rem;
+  letter-spacing: -0.01em;
+}
+
+.info p {
+  font-size: 0.83rem;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+}
+
+.info code {
+  font-family: var(--mono);
+  font-size: 0.82em;
+  color: var(--accent);
+  background: var(--accent-bg);
+  padding: 0.1em 0.38em;
+  border-radius: 4px;
+}
+
+/* ── feature list ── */
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.feat {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  transition: border-color 0.15s;
+}
+
+.feat:hover { border-color: #363c52; }
+
+.feat-icon {
+  font-size: 1rem;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.feat-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.feat-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.feat-desc {
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── footer / divider ── */
+.info-footer {
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.back-link:hover { opacity: 0.75; }
+
+.hint-text {
+  font-family: var(--mono);
+  font-size: 0.67rem;
+  color: var(--dim);
+}
+
+/* ── keyframes ── */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="home-link">
+    <span class="arrow">←</span>
+    <span>~/workbench</span>
+  </a>
+</nav>
+
+<main>
+  <div class="panel">
+
+    <div class="clock-wrap">
+      <div class="clock-label">local time</div>
+      <div id="clock">--:--:--</div>
+      <div class="clock-sub">
+        <span class="js-dot"></span>
+        <span>JavaScript is running</span>
+      </div>
+    </div>
+
+    <div class="info">
+      <h1>workbench is live</h1>
+      <p>A local server that turns <code>.html</code> files in <code>~/workbench/tools/</code>
+         into browser tools — auto-indexed, with live reload built in.</p>
+
+      <div class="features">
+        <div class="feat">
+          <span class="feat-icon">📂</span>
+          <div class="feat-text">
+            <span class="feat-title">Drop a file, it appears</span>
+            <span class="feat-desc">Anything in <code>tools/</code> shows up on the home page within a second.</span>
+          </div>
+        </div>
+        <div class="feat">
+          <span class="feat-icon">⚡</span>
+          <div class="feat-text">
+            <span class="feat-title">Edit and it reloads</span>
+            <span class="feat-desc">The server injects live reload into every page — no browser extension needed.</span>
+          </div>
+        </div>
+        <div class="feat">
+          <span class="feat-icon">🤖</span>
+          <div class="feat-text">
+            <span class="feat-title">Ask Claude to build tools</span>
+            <span class="feat-desc">Say "add this to my workbench" and Claude writes the tool directly into <code>tools/</code>.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-footer">
+        <a href="/" class="back-link">← back to home</a>
+        <span class="hint-text">edit this file to see live reload</span>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  const el = document.getElementById('clock');
+  const tick = () => { el.textContent = new Date().toLocaleTimeString(); };
+  tick();
+  setInterval(tick, 1000);
+</script>
+</body>
+</html>
