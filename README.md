@@ -27,8 +27,6 @@ Update later with `/plugin marketplace update grizzly-plugins`.
 - **test-audit** — audits tests for real signal vs. false confidence.
 - **working-with-llms** — the workflow for creating any LLM-facing content (prompts, skills, tool descriptions).
 - **review-ready-writing** — tightens materials meant for someone else to review.
-- **mcp-builder** — guide for building high-quality MCP servers (Python FastMCP or Node/TS).
-- **frontend-design** — distinctive, production-grade frontend interfaces.
 - **bevy-ui** — building and debugging UI in Bevy 0.18.
 - **pinchtab** — token-efficient browser automation via PinchTab.
 - **jules-delegation** — delegate coding tasks to Google's Jules async agent.
