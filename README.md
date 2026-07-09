@@ -59,6 +59,8 @@ Update later with `/plugin marketplace update grizzly-plugins`.
 - **crank-turner** — works through well-defined, mechanical, repetitive changes (migrations, mass renames) verifiable by tests/linters.
 - **design-doc-reviewer** — reviews a systems-level design doc for ambiguities and missing detail before implementation; pairs with phase-plan.
 - **ux-nitpicker** — creates, refines, or audits UI/UX work for usability and accessibility.
+- **grug-code-reviewer** — reviews diffs/PRs through the grug-brained lens, flagging premature abstraction and complexity smells.
+- **web-research-analyst** — fetches accurate, up-to-date information from the web and verifies facts against current sources.
 
 ### Commands
 
