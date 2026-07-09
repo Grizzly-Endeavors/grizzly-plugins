@@ -27,6 +27,8 @@ Update later with `/plugin marketplace update grizzly-plugins`.
 - **test-audit** — audits tests for real signal vs. false confidence.
 - **working-with-llms** — the workflow for creating any LLM-facing content (prompts, skills, tool descriptions).
 - **review-ready-writing** — tightens materials meant for someone else to review.
+- **adr** — create or update Architectural Decision Records that capture the *why* behind non-obvious decisions.
+- **tweaks** — a batch-tweak session lane for a run of small changes on one branch/PR, user-invoked.
 - **bevy-ui** — building and debugging UI in Bevy 0.18.
 - **pinchtab** — token-efficient browser automation via PinchTab.
 - **jules-delegation** — delegate coding tasks to Google's Jules async agent.
