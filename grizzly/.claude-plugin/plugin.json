@@ -1,0 +1,13 @@
+{
+  "name": "grizzly",
+  "description": "A working toolkit of skills, agents, and commands: reasoning lenses, debugging discipline, code craftsmanship, LLM-content authoring, and web/frontend helpers.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Grizzly Endeavors",
+    "email": "bearflinn@gmail.com"
+  },
+  "homepage": "https://github.com/Grizzly-Endeavors/grizzly-plugins",
+  "repository": "https://github.com/Grizzly-Endeavors/grizzly-plugins",
+  "license": "MIT",
+  "keywords": ["skills", "agents", "reasoning", "debugging", "code-quality", "writing", "frontend"]
+}

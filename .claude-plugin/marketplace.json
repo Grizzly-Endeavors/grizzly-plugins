@@ -1,0 +1,19 @@
+{
+  "name": "grizzly-plugins",
+  "owner": {
+    "name": "Grizzly Endeavors",
+    "email": "bearflinn@gmail.com"
+  },
+  "metadata": {
+    "description": "Personal Claude Code plugin marketplace — skills, agents, and commands used across the Grizzly Endeavors project family."
+  },
+  "plugins": [
+    {
+      "name": "grizzly",
+      "source": "./grizzly",
+      "description": "A working toolkit of skills, agents, and commands: reasoning lenses, debugging discipline, code craftsmanship, LLM-content authoring, and web/frontend helpers.",
+      "category": "workflow",
+      "tags": ["skills", "agents", "reasoning", "debugging", "code-quality", "writing"]
+    }
+  ]
+}
