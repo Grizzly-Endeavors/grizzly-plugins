@@ -108,3 +108,15 @@ This is not a call to bureaucratize everything — some things genuinely need ju
 ## 10. Don't make agents re-derive what could be written down · (both)
 
 If every fresh agent has to rediscover the same thing — how to run the tests, where the entry point is, the one non-obvious gotcha that wastes an hour — that rediscovery is a toll paid over and over. Write it down once, in the index or the agent file, and the toll is paid once. This is `Fix What Trips You` in its agent form: the friction you just hit is friction the next agent will hit too, so leave the answer behind you.
+
+---
+
+## Care that adds
+
+Each shape above can exist in rough form — refine it — or not exist at all — add it. For agents the absent case is the common one: most repos have never been given these, and every fresh agent pays for the gap. Small, self-contained additions:
+
+- a seed in-repo index — even ten lines of "where things live" beats a blind grep
+- the gotcha an agent (or you) just rediscovered, written into the agent file
+- a module-local note beside the one genuinely tricky module
+- build/test/run commands in the root agent file, if an agent would otherwise have to guess
+- a `--json` flag on the CLI output that scripts are currently parsing by regex

@@ -4,6 +4,8 @@ Concrete, language-agnostic shapes that "cared-for" tends to take. The mode refe
 
 The shapes are split by **who** the care is for, because a thing can be cared-for for one audience and neglected for another. Consult whichever lenses match what you are tending — often more than one.
 
+Every lens ends with a **Care that adds** list: small additions whose *absence* is the finding. Read it as part of the lens, not an appendix — surveys naturally catch flaws in what exists and walk past what was never built, and those gaps are where a codebase most often fails to feel loved.
+
 ## The three lenses
 
 - **`code.md` — for the next maintainer.** The person who reads and changes this code later (often future-you). Always relevant, because every mode leaves code behind. Illegal states made unrepresentable, errors for the 3am debugger, guessable names, boundaries at the domain's joints, care for the unglamorous operational edges.

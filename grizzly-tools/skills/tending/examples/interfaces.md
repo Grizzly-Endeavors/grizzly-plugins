@@ -83,3 +83,16 @@ Divergent terminology between the docs and the actual flags, or a delete that be
 ## 10. Respecting time and attention
 
 Fast where speed is felt; quiet where interruption isn't earned. Don't nag, don't block on things that could wait, and never trick the user into an action they didn't intend. A cared-for interface treats the user's attention as borrowed, not owned — no dark patterns, no manufactured urgency, no friction added to serve the product over the person.
+
+---
+
+## Care that adds
+
+Each shape above can be present-but-rough — refine it — or missing outright — add it. The missing ones are what make a surface feel unloved even when nothing is *wrong*, and they are the findings surveys most often miss. Small, self-contained additions a user would feel immediately:
+
+- a worked example in `--help` or at the top of the README quickstart
+- an empty state that teaches the first action instead of showing a void
+- a progress line for the operation that currently runs silent
+- a "did you mean …" on the mistyped command or a link to the valid options in the error
+- a confirmation (or better, an undo) on the destructive action that today just happens
+- a meaningful exit code, so scripts can finally tell success from failure

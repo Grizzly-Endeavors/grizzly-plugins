@@ -2,7 +2,7 @@
 
 Making the rounds. This is the caretaker's mode — an unhurried walk through the code, noticing what could use attention, and giving it. Nothing dramatic happens here. The point is a place that is visibly, consistently attended to, which is a quality that comes from many small acts rather than one large one.
 
-Reach for this when there is no single big target, just a general sense that a corner of the codebase would feel more cared-for after some attention. Or run it as a standing loop: tend one thing, then go find the next.
+Reach for this when there is no single big target, just a general sense that a corner of the codebase would feel more cared-for after some attention — and when someone is present to steer. If tending is running unattended (`/loop`, a schedule, "keep going on your own"), do not walk the rounds yourself: that is Garden's job — read `references/garden.md` and orchestrate scouts instead. A main thread making rounds alone sees only its own narrow walk, and after a few loops mistakes that walk for the whole garden.
 
 ## The Loop
 
@@ -35,6 +35,7 @@ The catalog below is the round-sized subset of those shapes, gathered here for c
 - **A test that has quietly died** — `#[ignore]`, `skip`, `xit`, a commented-out assertion. Either revive it or delete it honestly. A test everyone has learned to distrust is worse than no test.
 - **Dead code.** An unused function, an unreferenced branch, a flag whose experiment concluded long ago. Remove it. The willingness to delete is one of the clearest signs of an active caretaker.
 - **A small, real duplication** — two or three lines repeated verbatim nearby, with no variation. Fold them together in place. (If it is scattered widely or varies between sites, that is Gather's job, not a round.)
+- **A missing small kindness.** The empty state that could teach the first action, the `--help` with no worked example, the slow path that runs silent, the config value that fails mid-run instead of at startup, the invariant everyone assumes but nothing asserts. Tending adds as often as it corrects — each lens ends with a *Care that adds* list of round-sized additions; survey for those gaps too, not only for flaws in what exists.
 
 ## How to Tend a Single Thing
 
