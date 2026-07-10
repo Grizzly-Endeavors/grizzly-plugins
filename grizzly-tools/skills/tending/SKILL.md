@@ -13,8 +13,10 @@ description: >
   this feel maintained", "give this some love", "tend to this", "rename this
   everywhere", "reorganize these modules", "distill this down", "clean up our
   CLAUDE.md", or "clean this up" in the caring rather than cosmetic sense — or
-  when you notice a codebase would benefit and want to offer it. Any language or
-  stack.
+  when you notice a codebase would benefit and want to offer it. Also runs
+  unattended (Garden): when invoked under /loop, on a schedule, or with phrases
+  like "keep tending", "tend continuously", or "let it run", orchestrate scout
+  and fixer agents instead of walking the code yourself. Any language or stack.
 ---
 
 # Tending
@@ -85,7 +87,11 @@ A single system has accreted responsibilities, or been evolved several times unt
 The same need is met in several places, each a little differently. Recognize the shared shape and build one well-made home for it — one that makes the modules it serves easier to understand, or that will clearly be reached for again and again.
 **Read:** `references/gather.md`
 
-Roughly by scope: **Rounds** is many small, independent cares; **Sweep** is one change applied across many places; **Distill** and **Gather** each reshape a single concern — Distill by subtracting from something overgrown, Gather by collecting something scattered. When torn between Sweep and the deeper two, ask whether you already know the change (Sweep) or are still deciding the right shape (Distill or Gather — decide there first, then a Sweep may be how you roll the decision out).
+### Garden — the four modes, run unattended
+Not a fifth kind of care but a way of running the others without supervision. When tending is invoked under `/loop`, on a schedule, or told to keep going on its own, the main thread becomes an orchestrator: it dispatches scout agents (armed with the example lenses) to survey, routes small findings to fixer agents and large ones to a dedicated agent on a worktree, then verifies and commits centrally. It never surveys or edits the code itself, and it never trusts "I already looked there."
+**Read:** `references/garden.md`
+
+Roughly by scope: **Rounds** is many small, independent cares; **Sweep** is one change applied across many places; **Distill** and **Gather** each reshape a single concern — Distill by subtracting from something overgrown, Gather by collecting something scattered. When torn between Sweep and the deeper two, ask whether you already know the change (Sweep) or are still deciding the right shape (Distill or Gather — decide there first, then a Sweep may be how you roll the decision out). And whenever tending runs unattended — a loop, a schedule, no one steering — the mode question answers itself: it's **Garden**, and the other four become the work it dispatches.
 
 ## What This Is Not
 

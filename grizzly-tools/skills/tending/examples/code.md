@@ -178,3 +178,16 @@ The operational edges — logging, shutdown, migrations, config — are where co
 ```
 
 Nobody demos these. Their presence means someone imagined the 3am on-call reader and left them something to stand on.
+
+---
+
+## Care that adds
+
+Every shape above can fall short in two ways: present but done poorly — refine it — or absent entirely — add it. Surveys reliably catch the first and walk straight past the second, because a gap has no line number to snag on. So scan for these deliberately; each is a small, self-contained *addition* the next maintainer would thank you for:
+
+- the test that pins the behavior you just had to read the implementation to learn
+- the assertion that writes down the invariant everything nearby silently assumes
+- the doc comment on a module's entry point saying what it's for and who calls it
+- the log line at the spot where, today, an operator watching a failure would be blind
+- the startup validation for the config value that currently fails mid-run
+- the named constant for the literal whose meaning you had to go ask about
