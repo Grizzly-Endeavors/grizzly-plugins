@@ -2,10 +2,11 @@
 
 A personal [Claude Code](https://claude.com/claude-code) plugin marketplace for the Grizzly Endeavors project family. It exists so a single set of skills, agents, and commands stays in sync across every machine I work on — install once per machine, update from git, never copy files by hand again.
 
-It ships two plugins so you only install what a given machine actually needs:
+It ships three plugins so you only install what a given machine actually needs:
 
 - **`grizzly-tools`** — the general-purpose toolkit: reasoning lenses, debugging discipline, code craftsmanship, planning/process, LLM-content authoring, plus supporting agents and the `/clean` command. Useful on any project.
 - **`grizzly-misc`** — hyper-specific skills bound to a particular tool, engine, project, or environment. Only worth installing where that context applies.
+- **`grizzly-mail`** — an MCP server giving Claude its own mailbox (`claude@grizzly-endeavors.com`) for end-to-end mail testing. Only works on machines holding the 1Password operator token.
 
 ## Install
 
@@ -13,6 +14,7 @@ It ships two plugins so you only install what a given machine actually needs:
 /plugin marketplace add Grizzly-Endeavors/grizzly-plugins
 /plugin install grizzly-tools@grizzly-plugins
 /plugin install grizzly-misc@grizzly-plugins   # optional, context-specific
+/plugin install grizzly-mail@grizzly-plugins   # optional, Grizzly machines only
 ```
 
 Update later with `/plugin marketplace update grizzly-plugins`.
@@ -75,6 +77,10 @@ Context-specific skills — install only where the context applies.
 - **jules-delegation** — delegate coding tasks to Google's Jules async agent.
 - **homelab-deploy** — deploy apps to the Grizzly Endeavors homelab Kubernetes cluster.
 - **residuum-brand** — Residuum's brand identity, voice, and aesthetic.
+
+## grizzly-mail
+
+An MCP server (single-file stdlib Python, no dependencies) bundling five tools — `send_mail`, `list_messages`, `read_message`, `delete_message`, `wait_for_message` — plus a skill carrying the usage conventions (self-round-trip testing, cleanup, the never-retry-auth rule). The launcher reads the mailbox password from 1Password once per session via the operator service-account token at `~/.config/op-tokens/operator`; see [grizzly-mail/README.md](grizzly-mail/README.md).
 
 ## License
 

@@ -1,0 +1,18 @@
+{
+  "name": "grizzly-mail",
+  "description": "Send and receive mail as claude@grizzly-endeavors.com via the self-hosted Stalwart server — an MCP server for end-to-end mail testing from Claude sessions. Requires the 1Password operator token on the machine.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Grizzly Endeavors",
+    "email": "bearflinn@gmail.com"
+  },
+  "homepage": "https://github.com/Grizzly-Endeavors/grizzly-plugins",
+  "repository": "https://github.com/Grizzly-Endeavors/grizzly-plugins",
+  "license": "MIT",
+  "keywords": ["mcp", "email", "smtp", "imap", "homelab", "testing"],
+  "mcpServers": {
+    "mail": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/grizzly-mail-mcp"
+    }
+  }
+}

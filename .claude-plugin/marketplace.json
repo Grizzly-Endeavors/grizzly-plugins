@@ -21,6 +21,13 @@
       "description": "Hyper-specific skills bound to a particular tool, engine, project, or environment: Bevy UI, PinchTab browser automation, Jules delegation, Residuum brand, and homelab deploys. Install only where relevant.",
       "category": "workflow",
       "tags": ["skills", "bevy", "browser-automation", "delegation", "homelab", "brand"]
+    },
+    {
+      "name": "grizzly-mail",
+      "source": "./grizzly-mail",
+      "description": "Send and receive mail as claude@grizzly-endeavors.com via the self-hosted Stalwart server — an MCP server for end-to-end mail testing from Claude sessions. Requires the 1Password operator token on the machine.",
+      "category": "workflow",
+      "tags": ["mcp", "email", "smtp", "imap", "homelab", "testing"]
     }
   ]
 }
