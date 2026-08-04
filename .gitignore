@@ -1,6 +1,7 @@
 # Skill packaging cruft — never commit these
 *.zip
 *.skill
+drafts/
 
 # OS / editor junk
 .DS_Store
