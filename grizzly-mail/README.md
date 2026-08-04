@@ -14,11 +14,14 @@ An MCP server giving Claude Code its own mailbox: `claude@grizzly-endeavors.com`
 
 | Tool | What it does |
 |---|---|
-| `send_mail` | Send plain-text mail as `claude@grizzly-endeavors.com` (From is fixed for DMARC alignment) |
+| `send_mail` | Send plain-text mail as `claude@grizzly-endeavors.com` (From is fixed for DMARC alignment), optionally with attachments |
 | `list_messages` | Compact newest-first listing of a folder (uid, flags, date, from, subject) |
-| `read_message` | Headers + text body of one message by uid, truncated by default |
+| `read_message` | Headers + text body of one message by uid, truncated by default, with any attachments listed |
+| `save_attachment` | Write one attachment to a path on disk and return where it landed |
 | `delete_message` | Delete a message by uid — clean up test mail |
 | `wait_for_message` | Poll for a matching unseen message (junk folder included) — the receive half of a round-trip test |
+
+Attachment contents are never inlined into tool output: `read_message` lists what a message carries, and `save_attachment` puts the bytes on disk to open with ordinary file tools. Bytes are written exactly as they arrived — archives stay packed, so unpack them yourself.
 
 The bundled `grizzly-mail` skill carries the usage conventions: self-round-trip as the canonical check, cleanup discipline, and the stop-immediately rule on auth failures (repeated failed logins IP-ban the client on the server).
 
