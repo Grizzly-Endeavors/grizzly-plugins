@@ -22,7 +22,9 @@ import email.policy
 import email.utils
 import imaplib
 import json
+import mimetypes
 import os
+import pathlib
 import re
 import smtplib
 import socket
@@ -40,9 +42,27 @@ SMTP_PORT = int(os.environ["GRIZZLY_MAIL_SMTP_PORT"])
 IMAP_PORT = int(os.environ["GRIZZLY_MAIL_IMAP_PORT"])
 DOMAIN = USER.rsplit("@", 1)[1]
 
-SERVER_INFO = {"name": "grizzly-mail", "version": "0.1.0"}
+SERVER_INFO = {"name": "grizzly-mail", "version": "0.2.0"}
 FALLBACK_PROTOCOL = "2024-11-05"
 JUNK_FOLDER = "Junk Mail"
+
+# Outbound attachments are capped well under the relay's own ceiling so an
+# oversized send fails here, instantly and legibly, instead of after a slow
+# upload ending in an SMTP rejection.
+MAX_ATTACH_BYTES = 20 * 1024 * 1024
+
+# Media types for the compressions mimetypes reports as an encoding. For a
+# name like report.xml.gz it returns the *inner* type (application/xml) plus
+# "gzip", but the attached bytes are the container — labelling them by the
+# inner type would tell the recipient to parse gzip as XML.
+DEFAULT_TYPE = "application/octet-stream"
+ENCODING_TYPES = {
+    "gzip": "application/gzip",
+    "bzip2": "application/x-bzip2",
+    "xz": "application/x-xz",
+    "compress": "application/x-compress",
+    "br": "application/x-brotli",
+}
 
 AUTH_ERROR = (
     f"authentication failed for {USER} — the password in 1Password "
@@ -188,6 +208,95 @@ def message_body_text(msg):
     return content
 
 
+def fetch_raw_message(conn, uid, folder, readonly=True):
+    """Raw bytes of one message by uid. Connection must be logged in."""
+    select_folder(conn, folder, readonly=readonly)
+    typ, data = conn.uid("fetch", uid, "(BODY.PEEK[])")
+    raw = next((item[1] for item in data
+                if isinstance(item, tuple) and len(item) > 1), None)
+    if typ != "OK" or raw is None:
+        raise ToolError(
+            f"uid {uid} not found in {folder} (already deleted or wrong "
+            "folder — list_messages to check)."
+        )
+    return raw
+
+
+# ---------------------------------------------------------------------------
+# attachments
+
+def attachment_parts(msg):
+    """Attachment parts in the order save_attachment's 1-based index uses.
+
+    A single-part message that is not text carries its payload directly
+    rather than in a sub-part, and iter_attachments would yield nothing for
+    it — so it counts as the message's one attachment.
+    """
+    if not msg.is_multipart():
+        return [] if msg.get_content_maintype() == "text" else [msg]
+    return list(msg.iter_attachments())
+
+
+def human_size(count):
+    size = float(count)
+    for unit in ("B", "KB", "MB", "GB"):
+        if size < 1024 or unit == "GB":
+            return f"{size:.0f} {unit}" if unit == "B" else f"{size:.1f} {unit}"
+        size /= 1024
+
+
+def attachment_manifest(parts, uid):
+    """Listing of a message's attachments, empty when it has none."""
+    if not parts:
+        return ""
+    lines = [f"attachments ({len(parts)}):"]
+    for index, part in enumerate(parts, 1):
+        payload = part.get_payload(decode=True) or b""
+        lines.append(
+            f"  [{index}] {part.get_filename() or '(no filename)'}  "
+            f"{part.get_content_type()}  {human_size(len(payload))}  "
+            f"({part.get_content_disposition() or 'unspecified'})"
+        )
+    lines.append(
+        f"save_attachment with uid={uid} and an index writes one to a path "
+        "you choose. Bytes are written exactly as they arrived, so unpack "
+        "archives (unzip, gunzip) yourself afterwards."
+    )
+    return "\n".join(lines)
+
+
+def safe_attachment_name(part, index):
+    """A filesystem-safe basename for an attachment.
+
+    The filename in a message is chosen by whoever sent it, so it is never
+    treated as a path: only the basename survives, and anything left that
+    would still escape or resolve oddly falls back to a generated name.
+    """
+    raw = (part.get_filename() or "").replace("\\", "/").replace("\x00", "")
+    name = os.path.basename(raw).strip()
+    if not name or name in (".", ".."):
+        suffix = mimetypes.guess_extension(part.get_content_type()) or ".bin"
+        name = f"attachment-{index}{suffix}"
+    return name
+
+
+def resolve_dest(dest, filename):
+    """Absolute path to write to, given a caller's dest and the safe name.
+
+    A dest naming a directory (or ending in a separator) takes the
+    attachment's own name; anything else is used verbatim as the file path.
+    """
+    path = pathlib.Path(dest).expanduser()
+    if dest.endswith(("/", os.sep)) or path.is_dir():
+        path = path / filename
+    if not path.parent.is_dir():
+        raise ToolError(
+            f"no directory {path.parent} to write into — create it first, or "
+            "pass a dest inside a directory that already exists."
+        )
+    return path
+
+
 # ---------------------------------------------------------------------------
 # tools
 
@@ -204,10 +313,42 @@ def tool_send_mail(args):
     if args.get("reply_to"):
         msg["Reply-To"] = args["reply_to"]
     msg.set_content(args["body"])
+    attached = attach_files(msg, args.get("attach") or [])
     with smtplib.SMTP_SSL(HOST, SMTP_PORT, timeout=30) as smtp:
         smtp.login(USER, PASSWORD)
         smtp.send_message(msg)
-    return f"sent {msg['Message-ID']} to {to}"
+    note = f" with {len(attached)} attachment(s): {', '.join(attached)}" \
+        if attached else ""
+    return f"sent {msg['Message-ID']} to {to}{note}"
+
+
+def attach_files(msg, paths):
+    """Attach each path to msg, returning the filenames used."""
+    names = []
+    total = 0
+    for given in paths:
+        path = pathlib.Path(given).expanduser()
+        if not path.is_file():
+            raise ToolError(
+                f"cannot attach {given} — it is not a readable file (check "
+                "the path; it must already exist on this machine)."
+            )
+        data = path.read_bytes()
+        total += len(data)
+        if total > MAX_ATTACH_BYTES:
+            raise ToolError(
+                f"attachments exceed {human_size(MAX_ATTACH_BYTES)} in total "
+                f"at {path.name} — nothing was sent. Send fewer or smaller "
+                "files; the relay rejects oversized messages."
+            )
+        ctype, encoding = mimetypes.guess_type(path.name)
+        if encoding:
+            ctype = ENCODING_TYPES.get(encoding, DEFAULT_TYPE)
+        maintype, _, subtype = (ctype or DEFAULT_TYPE).partition("/")
+        msg.add_attachment(data, maintype=maintype, subtype=subtype,
+                           filename=path.name)
+        names.append(path.name)
+    return names
 
 
 def tool_list_messages(args):
@@ -232,15 +373,7 @@ def tool_read_message(args):
     mark_seen = bool(args.get("mark_seen", True))
     conn = imap_connect()
     try:
-        select_folder(conn, folder, readonly=False)
-        typ, data = conn.uid("fetch", uid, "(BODY.PEEK[])")
-        raw = next((item[1] for item in data
-                    if isinstance(item, tuple) and len(item) > 1), None)
-        if typ != "OK" or raw is None:
-            raise ToolError(
-                f"uid {uid} not found in {folder} (already deleted or wrong "
-                "folder — list_messages to check)."
-            )
+        raw = fetch_raw_message(conn, uid, folder, readonly=not mark_seen)
         if mark_seen:
             conn.uid("store", uid, "+FLAGS", r"(\Seen)")
     finally:
@@ -257,7 +390,51 @@ def tool_read_message(args):
             f"\n[truncated — {max_bytes} of {len(encoded)} bytes; "
             f"re-call with max_bytes={len(encoded)}]"
         )
-    return f"{headers}\n\n{body}"
+    # The manifest follows the truncated body rather than sharing its budget:
+    # a long message must not be able to hide that it carried attachments.
+    manifest = attachment_manifest(attachment_parts(msg), uid)
+    return f"{headers}\n\n{body}" + (f"\n\n{manifest}" if manifest else "")
+
+
+def tool_save_attachment(args):
+    uid = str(args["uid"])
+    folder = args.get("folder", "INBOX")
+    index = int(args["index"])
+    dest = args["dest"]
+    overwrite = bool(args.get("overwrite", False))
+    conn = imap_connect()
+    try:
+        raw = fetch_raw_message(conn, uid, folder, readonly=True)
+    finally:
+        imap_close(conn)
+    msg = email.message_from_bytes(raw, policy=email.policy.default)
+    parts = attachment_parts(msg)
+    if not parts:
+        raise ToolError(f"uid {uid} in {folder} has no attachments.")
+    if not 1 <= index <= len(parts):
+        raise ToolError(
+            f"no attachment [{index}] on uid {uid} — it has {len(parts)}, "
+            f"indexed 1-{len(parts)} (read_message lists them)."
+        )
+    part = parts[index - 1]
+    payload = part.get_payload(decode=True)
+    if payload is None:
+        raise ToolError(
+            f"attachment [{index}] on uid {uid} has no decodable content "
+            f"(content-type {part.get_content_type()})."
+        )
+    path = resolve_dest(dest, safe_attachment_name(part, index))
+    if path.exists() and not overwrite:
+        raise ToolError(
+            f"{path} already exists and was left untouched — pass "
+            "overwrite=true to replace it, or choose another dest."
+        )
+    path.write_bytes(payload)
+    return (
+        f"saved attachment [{index}] of uid={uid} to {path} "
+        f"({human_size(len(payload))}, {part.get_content_type()}) — written "
+        "as-is, so unpack it yourself if it is an archive"
+    )
 
 
 def tool_delete_message(args):
@@ -348,6 +525,15 @@ TOOLS = [
                 "cc": {"type": "string", "description": "Optional Cc address"},
                 "reply_to": {"type": "string",
                              "description": "Optional Reply-To address"},
+                "attach": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": (
+                        "Optional paths to files on this machine to attach. "
+                        "Total size is capped at "
+                        f"{human_size(MAX_ATTACH_BYTES)}."
+                    ),
+                },
             },
             "required": ["to", "subject", "body"],
         },
@@ -373,7 +559,9 @@ TOOLS = [
         "description": (
             "Read one message by uid: headers plus the text body (html is "
             "stripped to text). Output is truncated at max_bytes; the "
-            "truncation note says how to fetch the rest."
+            "truncation note says how to fetch the rest. Any attachments are "
+            "listed after the body with the index save_attachment takes — "
+            "their contents are never inlined."
         ),
         "inputSchema": {
             "type": "object",
@@ -384,6 +572,41 @@ TOOLS = [
                 "mark_seen": {"type": "boolean", "default": True},
             },
             "required": ["uid"],
+        },
+    },
+    {
+        "name": "save_attachment",
+        "description": (
+            "Write one attachment to a path on this machine and return where "
+            "it landed, so it can be opened with ordinary file tools. Get the "
+            "index from read_message. Bytes are saved exactly as they "
+            "arrived — archives (.zip, .gz) are not unpacked, so run unzip or "
+            "gunzip on the saved file yourself."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "uid": {"type": "string"},
+                "index": {
+                    "type": "integer",
+                    "description": "1-based index from read_message's listing",
+                },
+                "dest": {
+                    "type": "string",
+                    "description": (
+                        "Where to write it: a full file path, or an existing "
+                        "directory to write into under the attachment's own "
+                        "name"
+                    ),
+                },
+                "folder": {"type": "string", "default": "INBOX"},
+                "overwrite": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": "Replace dest if a file is already there",
+                },
+            },
+            "required": ["uid", "index", "dest"],
         },
     },
     {
@@ -425,6 +648,7 @@ TOOL_HANDLERS = {
     "send_mail": tool_send_mail,
     "list_messages": tool_list_messages,
     "read_message": tool_read_message,
+    "save_attachment": tool_save_attachment,
     "delete_message": tool_delete_message,
     "wait_for_message": tool_wait_for_message,
 }

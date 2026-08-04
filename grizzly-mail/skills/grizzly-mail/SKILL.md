@@ -1,6 +1,6 @@
 ---
 name: grizzly-mail
-description: Conventions for the grizzly-mail MCP tools (send_mail, list_messages, read_message, delete_message, wait_for_message) — the claude@grizzly-endeavors.com agent mailbox on the self-hosted Stalwart server. Use whenever sending or checking mail through those tools, testing a mail flow end-to-end (invite emails, notifications, deliverability), or verifying that the platform's mail path works. Also covers what to do on an authentication failure.
+description: Conventions for the grizzly-mail MCP tools (send_mail, list_messages, read_message, save_attachment, delete_message, wait_for_message) — the claude@grizzly-endeavors.com agent mailbox on the self-hosted Stalwart server. Use whenever sending or checking mail through those tools, reading or pulling down an attachment, testing a mail flow end-to-end (invite emails, notifications, deliverability), or verifying that the platform's mail path works. Also covers what to do on an authentication failure.
 ---
 
 # grizzly-mail: the agent mailbox
@@ -10,6 +10,14 @@ You have your own mailbox: `claude@grizzly-endeavors.com` on the platform's Stal
 ## The canonical end-to-end check
 
 `send_mail` to `claude@grizzly-endeavors.com` (yourself), then `wait_for_message` on the subject. One round-trip proves SMTP submission, the SMTP2GO relay, own-MX inbound delivery, and IMAP all work. Delivery hairpins through the VPS and takes **~1–2 minutes** — that's normal, and `wait_for_message`'s default 120s timeout is sized for it. A timeout doesn't necessarily mean failure; one re-call to keep waiting is reasonable before investigating.
+
+## Attachments
+
+`read_message` lists a message's attachments after the body — index, filename, media type, size — and never inlines their contents. `save_attachment` takes that index plus a `dest` and writes the bytes to disk, returning the path to open with ordinary file tools.
+
+Files are saved **exactly as they arrived**. A `.zip` or `.gz` stays packed, so run `unzip`/`gunzip` on the saved path yourself — a DMARC aggregate report, for instance, is zipped XML and takes a save then an unzip. `dest` can be a full file path or an existing directory to write into under the attachment's own name; an existing file is never clobbered unless you pass `overwrite`.
+
+`send_mail` takes `attach` — a list of paths on this machine — capped at 20 MB total.
 
 ## Rules
 
