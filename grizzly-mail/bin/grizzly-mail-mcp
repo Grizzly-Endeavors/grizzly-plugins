@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# grizzly-mail MCP server launcher for the Claude Code plugin.
+#
+# Fetches the claude@grizzly-endeavors.com mailbox password from 1Password
+# (exactly once per server start — MCP servers live for a whole session, and
+# the 1P account budget is 1,000 requests/day shared across tokens), then
+# execs the stdlib-only Python server speaking newline-delimited JSON-RPC 2.0
+# over stdio. All diagnostics go to stderr; stdout is reserved for the
+# protocol.
+#
+# Registered as the plugin's `mcpServers.mail` command. The password never
+# touches a command line or this script's output — it is passed to the server
+# through the process environment only.
+set -euo pipefail
+
+TOKEN_FILE="${GRIZZLY_MAIL_OP_TOKEN_FILE:-$HOME/.config/op-tokens/operator}"
+SECRET_REF="op://grizzly-platform/platform-stalwart/claude_password"
+
+fail() {
+  echo "grizzly-mail: $*" >&2
+  exit 1
+}
+
+command -v op >/dev/null 2>&1 \
+  || fail "the 1Password CLI (op) is not on PATH — install it or set GRIZZLY_MAIL_OP_TOKEN_FILE on a machine that has it."
+command -v python3 >/dev/null 2>&1 \
+  || fail "python3 is not on PATH."
+[ -r "$TOKEN_FILE" ] \
+  || fail "cannot read the 1Password service-account token at $TOKEN_FILE — this plugin only works on a machine holding the operator token."
+
+GRIZZLY_MAIL_PASSWORD="$(OP_SERVICE_ACCOUNT_TOKEN="$(cat "$TOKEN_FILE")" op read "$SECRET_REF")" \
+  || fail "could not read $SECRET_REF from 1Password (check the token at $TOKEN_FILE and the platform-stalwart item)."
+[ -n "$GRIZZLY_MAIL_PASSWORD" ] \
+  || fail "1Password returned an empty claude_password — refusing to start with a blank credential."
+
+export GRIZZLY_MAIL_PASSWORD
+export GRIZZLY_MAIL_HOST="${GRIZZLY_MAIL_HOST:-mail.grizzly-endeavors.com}"
+export GRIZZLY_MAIL_USER="${GRIZZLY_MAIL_USER:-claude@grizzly-endeavors.com}"
+export GRIZZLY_MAIL_SMTP_PORT="${GRIZZLY_MAIL_SMTP_PORT:-465}"
+export GRIZZLY_MAIL_IMAP_PORT="${GRIZZLY_MAIL_IMAP_PORT:-993}"
+
+# Resolve the server relative to this script (not CLAUDE_PLUGIN_ROOT) so a
+# by-hand smoke test — piping JSON-RPC lines straight into this launcher —
+# works outside the plugin harness too.
+exec python3 "$(dirname "$(readlink -f "$0")")/../server/grizzly_mail_mcp.py"
