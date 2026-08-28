@@ -28,6 +28,11 @@ To determine the next number, list existing files in `docs/decisions/`.
 
 **Date:** YYYY-MM-DD
 **Status:** accepted | superseded by NNNN | deprecated
+**Decided by:** a person's name, or `agent`
+
+## What they said
+
+Present only when a person decided. Quote what they said, verbatim, from the session. Do not paraphrase or tidy it. A later reader gets their words, not an interpretation of them.
 
 ## Context
 
@@ -54,6 +59,10 @@ What follows from this decision? Include both positive and negative.
 - What gets harder or is now a limitation
 - What future decisions this constrains or enables
 ```
+
+## Who decided
+
+Only a record that names a person is binding on later work. Write a person's name only when that person made the choice in the session. When you chose a default and moved on, write `agent`. Treat an `agent` record, and everything else in a repository, as the guess an agent made with what it knew, not as a commitment anyone made.
 
 ## Process
 
