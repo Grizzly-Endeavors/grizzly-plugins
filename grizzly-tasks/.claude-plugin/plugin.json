@@ -1,0 +1,13 @@
+{
+  "name": "grizzly-tasks",
+  "description": "Manage tasks in the self-hosted Vikunja (todo.grizzly-endeavors.com) from the terminal with the vja CLI, including first-time setup on a new machine. Requires a Vikunja API token on the machine.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Grizzly Endeavors",
+    "email": "bearflinn@gmail.com"
+  },
+  "homepage": "https://github.com/Grizzly-Endeavors/grizzly-plugins",
+  "repository": "https://github.com/Grizzly-Endeavors/grizzly-plugins",
+  "license": "MIT",
+  "keywords": ["skills", "vikunja", "tasks", "todo", "cli", "homelab"]
+}
