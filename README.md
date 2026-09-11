@@ -77,6 +77,7 @@ Context-specific skills — install only where the context applies.
 - **jules-delegation** — delegate coding tasks to Google's Jules async agent.
 - **homelab-deploy** — deploy apps to the Grizzly Endeavors homelab Kubernetes cluster.
 - **residuum-brand** — Residuum's brand identity, voice, and aesthetic.
+- **vja** — manage tasks in the self-hosted Vikunja from the terminal with the `vja` CLI, plus first-time setup on a new machine.
 
 ## grizzly-mail
 
