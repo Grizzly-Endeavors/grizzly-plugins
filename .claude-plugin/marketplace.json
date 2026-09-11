@@ -18,9 +18,9 @@
     {
       "name": "grizzly-misc",
       "source": "./grizzly-misc",
-      "description": "Hyper-specific skills bound to a particular tool, engine, project, or environment: Bevy UI, PinchTab browser automation, Jules delegation, Residuum brand, and homelab deploys. Install only where relevant.",
+      "description": "Hyper-specific skills bound to a particular tool, engine, project, or environment: Bevy UI, PinchTab browser automation, Jules delegation, Residuum brand, homelab deploys, and Vikunja tasks via vja. Install only where relevant.",
       "category": "workflow",
-      "tags": ["skills", "bevy", "browser-automation", "delegation", "homelab", "brand"]
+      "tags": ["skills", "bevy", "browser-automation", "delegation", "homelab", "brand", "vikunja", "tasks"]
     },
     {
       "name": "grizzly-mail",
