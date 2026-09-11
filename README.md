@@ -2,19 +2,21 @@
 
 A personal [Claude Code](https://claude.com/claude-code) plugin marketplace for the Grizzly Endeavors project family. It exists so a single set of skills, agents, and commands stays in sync across every machine I work on — install once per machine, update from git, never copy files by hand again.
 
-It ships three plugins so you only install what a given machine actually needs:
+It ships four plugins so you only install what a given machine actually needs:
 
 - **`grizzly-tools`** — the general-purpose toolkit: reasoning lenses, debugging discipline, code craftsmanship, planning/process, LLM-content authoring, plus supporting agents and the `/clean` command. Useful on any project.
 - **`grizzly-misc`** — hyper-specific skills bound to a particular tool, engine, project, or environment. Only worth installing where that context applies.
 - **`grizzly-mail`** — an MCP server giving Claude its own mailbox (`claude@grizzly-endeavors.com`) for end-to-end mail testing. Only works on machines holding the 1Password operator token.
+- **`grizzly-tasks`** — a skill for managing tasks in the self-hosted Vikunja from the terminal with the `vja` CLI, including first-time setup on a new machine. Only useful where a Vikunja API token can be set up.
 
 ## Install
 
 ```
 /plugin marketplace add Grizzly-Endeavors/grizzly-plugins
 /plugin install grizzly-tools@grizzly-plugins
-/plugin install grizzly-misc@grizzly-plugins   # optional, context-specific
-/plugin install grizzly-mail@grizzly-plugins   # optional, Grizzly machines only
+/plugin install grizzly-misc@grizzly-plugins    # optional, context-specific
+/plugin install grizzly-mail@grizzly-plugins    # optional, Grizzly machines only
+/plugin install grizzly-tasks@grizzly-plugins   # optional, machines where you manage Vikunja tasks
 ```
 
 Update later with `/plugin marketplace update grizzly-plugins`.
@@ -77,11 +79,14 @@ Context-specific skills — install only where the context applies.
 - **jules-delegation** — delegate coding tasks to Google's Jules async agent.
 - **homelab-deploy** — deploy apps to the Grizzly Endeavors homelab Kubernetes cluster.
 - **residuum-brand** — Residuum's brand identity, voice, and aesthetic.
-- **vja** — manage tasks in the self-hosted Vikunja from the terminal with the `vja` CLI, plus first-time setup on a new machine.
 
 ## grizzly-mail
 
 An MCP server (single-file stdlib Python, no dependencies) bundling five tools — `send_mail`, `list_messages`, `read_message`, `delete_message`, `wait_for_message` — plus a skill carrying the usage conventions (self-round-trip testing, cleanup, the never-retry-auth rule). The launcher reads the mailbox password from 1Password once per session via the operator service-account token at `~/.config/op-tokens/operator`; see [grizzly-mail/README.md](grizzly-mail/README.md).
+
+## grizzly-tasks
+
+- **vja** — manage tasks in the self-hosted Vikunja (todo.grizzly-endeavors.com) with the `vja` CLI: find, add, edit, complete, defer, relate and delete tasks, plus projects and labels. Its `references/first-time-setup.md` installs and configures vja on a new machine; the API token comes from your Vikunja account settings.
 
 ## License
 
