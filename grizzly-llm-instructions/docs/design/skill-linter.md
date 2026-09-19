@@ -62,7 +62,7 @@ Composite = (weighted positives − weighted negatives), normalized by section s
 
 ### Gate
 
-The pre-commit hook fails on any individual finding: a Vale error, a section below the minimum composite, or a failed skill-level check.
+The pre-commit hook fails on any individual finding: a Vale error, a section below the minimum size, a section below the minimum composite, or a failed skill-level check.
 
 ## Vale rules
 
