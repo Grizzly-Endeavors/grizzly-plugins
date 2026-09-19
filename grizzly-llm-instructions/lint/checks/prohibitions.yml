@@ -4,9 +4,11 @@ weight: 5
 curve: 2
 question:
   type: score
-  instructions: How much of `section.text` describes what the reader must avoid, instead of what the reader must do?
+  instructions:
+    question: How much of `section.text` tells the reader what not to do, instead of what to do?
+    not_prohibitions: A description of a failure mode, a symptom, a mistake the reader should recognize, or a situation that calls for the skill. These describe the problem; they do not tell the reader what to avoid.
   criteria:
     - "None: the section describes only what to do."
     - "Some: one or two prohibitions."
-    - "Much: prohibitions or lists of mistakes make up a large part of the section."
+    - "Much: prohibitions or lists of mistakes to avoid make up a large part of the section."
     - "Mostly: the section defines the target mainly by what to avoid."

@@ -1,16 +1,16 @@
 extends: existence
 message: "History '%s': describe the skill as it is now."
 level: error
-ignorecase: true
+ignorecase: false
+# Phrases about the instructions' own past. Past events in the task domain ("a previously fixed bug") are not history.
 tokens:
-  - "previously"
-  - "formerly"
-  - "originally"
-  - "used to"
-  - "no longer"
-  - "(?:was|were|has been|have been) (?:removed|dropped|replaced|deprecated)"
-  - "deprecated"
-  - "(?:prior|previous|earlier|old|older) version"
-  - "retained only"
-  - "superseded"
-  - "legacy"
+  - "(?i:previously (?:offered|used|recommended|described|documented|supported|required))"
+  - "(?i:(?:this|the) (?:skill|file|document|section) (?:used to|previously|originally|no longer|was))"
+  - "(?i:no longer (?:offered|recommended|supported|needed|required))"
+  - "(?i:(?:was|were|has been|have been) (?:removed|dropped|deprecated|retired) from (?:this|the) (?:skill|file|document|workflow))"
+  - "(?i:(?:was|were|has been|have been) (?:removed|dropped|retired))"
+  - "(?i:(?:prior|previous|earlier|older?) version of (?:this|the) (?:skill|file|document|workflow))"
+  - "(?i:a prior version)"
+  - "(?i:retained only)"
+  - "(?i:superseded by)"
+  - "DEPRECATED"
