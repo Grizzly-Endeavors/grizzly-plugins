@@ -1,6 +1,6 @@
 # Skill linter design
 
-A catch-only linter for agent-written skills. It combines Vale (fixed-wording rules, line-level findings) with Jev (semantic judgments, section- and skill-level scores). It ships as a CLI with instructions for running it as a pre-commit hook. A companion rubric skill tells the fixing agent what a passing skill looks like; the linter itself never rewrites.
+A catch-only linter for agent-written skills. It combines Vale (fixed-wording rules, line-level findings) with Jev (semantic judgments, section- and skill-level scores). It ships as a CLI with instructions for running it as a pre-commit hook. A companion rubric skill, `writing-skills`, tells the fixing agent what a passing skill looks like; the linter itself never rewrites.
 
 ## Scope
 
@@ -83,15 +83,13 @@ The plugin ships its own Vale style and `.vale.ini`; the CLI passes that config 
 
 ## Rubric skill
 
-Hand-written guidance for the fixing agent, written from the skills that pass. It covers:
+`skills/writing-skills` is the hand-written guidance for the fixing agent. It covers:
 
 - goal as the outcome for the people served, and why it matters, as the checks define them
 - positive framing, ASD-STE100 without the dictionary
 - deleting and merging sections, dropping niche edge cases, and routing detail into reference files as valid fixes
 
 A fixer given only the scoring mechanics finds the linter and iterates against it. Without the rubric it bolts reasons and bounds onto sections and splits sentences until they read choppily; the rubric exists to steer that loop toward better skills, not higher numbers.
-
-`grizzly-tools:working-with-llms` predates these rules (it teaches earned negatives) and scores 32. The rubric skill supersedes it.
 
 ## Calibration (prerequisite to shipping)
 

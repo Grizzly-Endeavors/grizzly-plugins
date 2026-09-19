@@ -4,11 +4,11 @@ A personal [Claude Code](https://claude.com/claude-code) plugin marketplace for 
 
 It ships five plugins so you only install what a given machine actually needs:
 
-- **`grizzly-tools`** — the general-purpose toolkit: reasoning lenses, debugging discipline, code craftsmanship, planning/process, LLM-content authoring, plus supporting agents and the `/clean` command. Useful on any project.
+- **`grizzly-tools`** — the general-purpose toolkit: reasoning lenses, debugging discipline, code craftsmanship, planning/process, review-ready writing, plus supporting agents and the `/clean` command. Useful on any project.
 - **`grizzly-misc`** — hyper-specific skills bound to a particular tool, engine, project, or environment. Only worth installing where that context applies.
 - **`grizzly-mail`** — an MCP server giving Claude its own mailbox (`claude@grizzly-endeavors.com`) for end-to-end mail testing. Only works on machines holding the 1Password operator token.
 - **`grizzly-tasks`** — a skill for managing tasks in the self-hosted Vikunja from the terminal with the `vja` CLI, including first-time setup on a new machine. Only useful where a Vikunja API token can be set up.
-- **`grizzly-llm-instructions`** — `skill-lint`, a linter for agent skills that combines Vale rules with TypeSafe Jev judgments. Runs as a CLI or pre-commit hook; needs uv, Vale and a TypeSafe API key.
+- **`grizzly-llm-instructions`** — the `writing-skills` skill for writing and fixing agent skills, and `skill-lint`, a linter that scores skills against it by combining Vale rules with TypeSafe Jev judgments. Runs as a CLI or pre-commit hook; needs uv, Vale and a TypeSafe API key.
 
 ## Install
 
@@ -51,9 +51,8 @@ Update later with `/plugin marketplace update grizzly-plugins`.
 - **adr** — create or update Architectural Decision Records that capture the *why* behind non-obvious decisions.
 - **tweaks** — a batch-tweak session lane for a run of small changes on one branch/PR, user-invoked.
 
-**Writing & LLM content**
+**Writing**
 
-- **working-with-llms** — the workflow for creating any LLM-facing content (prompts, skills, tool descriptions).
 - **review-ready-writing** — tightens materials meant for someone else to review.
 
 ### Agents
@@ -92,7 +91,7 @@ An MCP server (single-file stdlib Python, no dependencies) bundling five tools �
 
 ## grizzly-llm-instructions
 
-`skill-lint` lints `SKILL.md` files: Vale reports line-level findings (prohibitions, history, padding, ASD-STE100 mechanics) and Jev scores each section, the skill body and the description. It fails a commit on any gating finding; see [grizzly-llm-instructions/README.md](grizzly-llm-instructions/README.md) for requirements, scoring and pre-commit setup.
+The **writing-skills** skill describes what a good skill looks like and how to fix one. `skill-lint` lints `SKILL.md` files against it: Vale reports line-level findings (prohibitions, history, padding, ASD-STE100 mechanics) and Jev scores each section, the skill body and the description. It fails a commit on any gating finding; see [grizzly-llm-instructions/README.md](grizzly-llm-instructions/README.md) for requirements, scoring and pre-commit setup.
 
 ## License
 

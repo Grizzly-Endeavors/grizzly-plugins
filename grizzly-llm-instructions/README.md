@@ -5,7 +5,7 @@
 - **Vale** reports line-level findings for fixed wording: prohibitions and fences, history narration, emphasis words, padding, formatting counts, and the mechanical rules of ASD-STE100 (sentence length, passive voice, paragraph length).
 - **Jev** (TypeSafe's System One model) scores each heading-delimited section, the skill body as a whole, and the frontmatter description.
 
-The linter only reports. Fixing the findings is the author's job.
+The linter only reports. The plugin's `writing-skills` skill describes what a passing skill looks like and how to fix findings.
 
 ## Requirements
 

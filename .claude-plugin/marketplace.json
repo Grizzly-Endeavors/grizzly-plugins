@@ -11,7 +11,7 @@
     {
       "name": "grizzly-tools",
       "source": "./grizzly-tools",
-      "description": "General-purpose toolkit useful on any project: reasoning lenses, debugging discipline, code craftsmanship, planning/process, and LLM-content authoring — plus supporting agents and commands.",
+      "description": "General-purpose toolkit useful on any project: reasoning lenses, debugging discipline, code craftsmanship, planning/process, and review-ready writing — plus supporting agents and commands.",
       "category": "workflow",
       "tags": ["skills", "agents", "reasoning", "debugging", "code-quality", "writing", "planning"]
     },
@@ -39,7 +39,7 @@
     {
       "name": "grizzly-llm-instructions",
       "source": "./grizzly-llm-instructions",
-      "description": "Lint agent skills with Vale rules and TypeSafe Jev judgments, as a CLI or pre-commit hook. Requires uv, Vale and a TYPESAFE_API_KEY.",
+      "description": "Write agent skills with the writing-skills skill and lint them with skill-lint (Vale rules and TypeSafe Jev judgments), as a CLI or pre-commit hook. Requires uv, Vale and a TYPESAFE_API_KEY.",
       "category": "workflow",
       "tags": ["skills", "linter", "vale", "typesafe", "pre-commit", "prompts"]
     }
