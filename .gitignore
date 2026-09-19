@@ -9,3 +9,6 @@ drafts/
 
 # Python bytecode
 __pycache__/
+
+# Local development files
+.env
