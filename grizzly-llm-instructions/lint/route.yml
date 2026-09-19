@@ -1,0 +1,9 @@
+# Sections that link to a file inside the skill are asked this question.
+# A section at or above the threshold is scored as a route, with the checks whose applies_to includes route.
+threshold: 0.75
+question:
+  type: noul
+  instructions: Is `section.text` a route, meaning its job is to say when a case applies and send the reader to a file for that case's instructions?
+  criteria:
+    true: The section mainly states when a case applies and which file to read. Any other sentence only helps the reader choose between cases.
+    false: The section gives goals, steps, reasons, or quality criteria for doing the work, even if it also links a file for details, or it lists files without choosing between cases.

@@ -30,6 +30,8 @@ from typesafe_sdk import AsyncTypeSafeClient
 LINT_DIR = Path(__file__).resolve().parent.parent / "lint"
 HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
 FENCE = re.compile(r"^\s*(```|~~~)")
+# A relative file path inside a Markdown link target or an inline code span.
+LINK = re.compile(r"\]\(([^)\s]+)\)|`([^`\s]+)`")
 
 SECTION_FRAMING = (
     "`section` is one section of a skill: an instruction file written for an AI agent. "
@@ -61,6 +63,7 @@ class Check:
     question: dict
     weight: float = 0.0
     curve: float = 1.0
+    applies_to: list[str] = field(default_factory=lambda: ["instruction"])
     fail_above: float | None = None
     fail_below: float | None = None
 
@@ -75,10 +78,19 @@ class Check:
 class Section:
     heading: str
     line: int
+    level: int
     text: str
     body_chars: int
+    links: list[str]
+    broken_links: list[str]
+    siblings: list["Section"] = field(default_factory=list)
     values: dict[str, float] = field(default_factory=dict)
+    role: str = "instruction"
     score: float | None = None
+
+    @property
+    def route_candidate(self) -> bool:
+        return bool(self.links)
 
 
 @dataclass
@@ -88,16 +100,34 @@ class Skill:
     description: str
     body: str
     sections: list[Section]
-    skipped: list[Section]
+    short: list[Section]
 
 
-def load_config() -> tuple[dict, list[Check]]:
+def load_config() -> tuple[dict, list[Check], dict]:
     scoring = yaml.safe_load((LINT_DIR / "scoring.yml").read_text())
     checks = []
     for f in sorted((LINT_DIR / "checks").glob("*.yml")):
         data = yaml.safe_load(f.read_text())
         checks.append(Check(id=f.stem, **data))
-    return scoring, checks
+    route = yaml.safe_load((LINT_DIR / "route.yml").read_text())
+    return scoring, checks, route
+
+
+def skill_links(body: str, skill_dir: Path) -> tuple[list[str], list[str]]:
+    """Relative file paths the text points to inside the skill, and those that do not exist.
+
+    A Markdown link target counts. An inline code path counts only when its first directory
+    exists in the skill, so paths from the task domain (`ppt/slides/slide1.xml`) are ignored.
+    """
+    links = []
+    for m in LINK.finditer(body):
+        target = (m.group(1) or m.group(2)).split("#")[0]
+        if "/" not in target or "." not in target.rsplit("/", 1)[-1] or re.match(r"^([a-z]+:|/|~|\$)", target):
+            continue
+        if m.group(1) or (skill_dir / target.split("/")[0]).is_dir():
+            links.append(target)
+    links = list(dict.fromkeys(links))
+    return links, [t for t in links if not (skill_dir / t).exists()]
 
 
 def parse_skill(path: Path, min_chars: int) -> Skill:
@@ -133,17 +163,31 @@ def parse_skill(path: Path, min_chars: int) -> Skill:
         elif line.strip():
             raw.append((i + 1, 0, "(before first heading)", [line]))
 
-    sections, skipped = [], []
+    sections: list[Section] = []
+    parents: list[Section | None] = []
+    stack: list[tuple[int, Section | None]] = []  # (level, section) of the open headings
     for idx, (line_no, level, heading, body) in enumerate(raw):
         body_text = "\n".join(body).strip()
         next_level = raw[idx + 1][1] if idx + 1 < len(raw) else 0
-        if not body_text and next_level > level:
-            continue  # a container heading whose content is all subsections
+        while stack and stack[-1][0] >= level:
+            stack.pop()
+        parent = stack[-1][1] if stack else None
+        if next_level > level and len(body_text) < min_chars:
+            stack.append((level, None))  # a container: a heading with at most a short lead-in above its subsections
+            continue
         heading_line = f"{'#' * level} {heading}\n\n" if level else ""
-        section = Section(heading, line_no, heading_line + body_text, len(body_text))
-        (sections if section.body_chars >= min_chars else skipped).append(section)
+        links, broken = skill_links(body_text, path.parent)
+        section = Section(heading, line_no, level, heading_line + body_text, len(body_text), links, broken)
+        sections.append(section)
+        parents.append(parent)
+        stack.append((level, section))
+    # Routes are compared with the other route candidates under the same heading.
+    for s, parent in zip(sections, parents):
+        s.siblings = [
+            o for o, op in zip(sections, parents) if o is not s and o.route_candidate and o.level == s.level and op is parent
+        ]
     body = "\n".join(lines[start:]).strip()
-    return Skill(path, name, description, body, sections, skipped)
+    return Skill(path, name, description, body, sections, [])
 
 
 def find_skills(paths: list[str]) -> list[Path]:
@@ -188,21 +232,33 @@ async def ask(client: AsyncTypeSafeClient, state: dict, checks: list[Check]) -> 
     return {c.id: c.value(answers[c.id]) for c in checks}
 
 
-async def judge(skill: Skill, checks: list[Check], model: str) -> dict[str, float]:
-    by_slice = {s: [c for c in checks if c.slice == s] for s in ("section", "skill", "description")}
-    async with AsyncTypeSafeClient(model=model) as client:
-        section_jobs = [
-            ask(
-                client,
-                {
-                    "note": SECTION_FRAMING,
-                    "skill_purpose": skill.description,
-                    "section": {"heading": s.heading, "text": s.text},
-                },
-                by_slice["section"],
-            )
-            for s in skill.sections
-        ]
+def section_request(
+    s: Section, purpose: str, checks: list[Check], route: dict, min_chars: int
+) -> tuple[dict, list[Check]] | None:
+    """The state and checks for one section, or None when it is too short to score and cannot be a route."""
+    wanted = {"instruction"} if s.body_chars >= min_chars else set()
+    if s.route_candidate:
+        wanted.add("route")
+    if not wanted:
+        return None
+    state = {"note": SECTION_FRAMING, "skill_purpose": purpose, "section": {"heading": s.heading, "text": s.text}}
+    asked = [c for c in checks if c.slice == "section" and wanted & set(c.applies_to)]
+    if s.route_candidate:
+        asked.append(Check(id="is-route", slice="section", direction="classifier", question=route["question"]))
+        if s.siblings:
+            state["other_routes"] = [o.text for o in s.siblings]
+        else:
+            asked = [c for c in asked if c.id != "route-distinct"]
+    return state, asked
+
+
+async def judge(skill: Skill, checks: list[Check], route: dict, scoring: dict) -> dict[str, float]:
+    by_slice = {s: [c for c in checks if c.slice == s] for s in ("skill", "description")}
+    requests = [
+        section_request(s, skill.description, checks, route, scoring["min_section_chars"]) for s in skill.sections
+    ]
+    async with AsyncTypeSafeClient(model=scoring["model"]) as client:
+        section_jobs = [ask(client, *req) for req in requests if req]
         skill_job = ask(client, {"note": SKILL_FRAMING, "skill": {"text": skill.body}}, by_slice["skill"])
         desc_job = ask(
             client,
@@ -210,13 +266,25 @@ async def judge(skill: Skill, checks: list[Check], model: str) -> dict[str, floa
             by_slice["description"],
         )
         *section_values, skill_values, desc_values = await asyncio.gather(*section_jobs, skill_job, desc_job)
-    for section, values in zip(skill.sections, section_values):
-        section.values = values
+    answered = iter(section_values)
+    for s, req in zip(skill.sections, requests):
+        if req is None:
+            s.role = "short"
+            continue
+        s.values = next(answered)
+        is_route = s.values.pop("is-route", 0.0) >= route["threshold"]
+        if is_route:
+            s.role = "route"
+        elif s.body_chars < scoring["min_section_chars"]:
+            s.role = "short"
+        # Values for checks that do not apply to the chosen role are dropped.
+        applicable = {c.id for c in checks if c.slice == "section" and s.role in c.applies_to}
+        s.values = {k: v for k, v in s.values.items() if k in applicable}
     return {**skill_values, **desc_values}
 
 
 def score_section(section: Section, checks: list[Check], scoring: dict) -> float:
-    section_checks = [c for c in checks if c.slice == "section"]
+    section_checks = [c for c in checks if c.slice == "section" and c.id in section.values]
     positive_weight = sum(c.weight for c in section_checks if c.direction == "positive")
     # A curve above 1 forgives low values: a trace costs little, a pervasive problem costs the full weight.
     signed = sum(
@@ -224,6 +292,8 @@ def score_section(section: Section, checks: list[Check], scoring: dict) -> float
         for c in section_checks
     )
     quality = signed / positive_weight
+    if section.role == "route":
+        return quality
     size = max(1.0, section.body_chars / scoring["size_unit_chars"]) ** scoring["size_exponent"]
     return quality / size
 
@@ -251,8 +321,10 @@ def skill_check_fails(check: Check, value: float) -> bool:
     )
 
 
-def lint_skill(skill: Skill, alerts: list[dict], checks: list[Check], scoring: dict) -> dict:
-    skill_values = asyncio.run(judge(skill, checks, scoring["model"]))
+def lint_skill(skill: Skill, alerts: list[dict], checks: list[Check], route: dict, scoring: dict) -> dict:
+    skill_values = asyncio.run(judge(skill, checks, route, scoring))
+    skill.short = [s for s in skill.sections if s.role == "short"]
+    skill.sections = [s for s in skill.sections if s.role != "short"]
     for s in skill.sections:
         s.score = score_section(s, checks, scoring)
 
@@ -282,6 +354,7 @@ def lint_skill(skill: Skill, alerts: list[dict], checks: list[Check], scoring: d
         {
             "heading": s.heading,
             "line": s.line,
+            "role": s.role,
             "chars": s.body_chars,
             "score": round(display_score(s.score, scoring), 3),
             "grade": grade(display_score(s.score, scoring), scoring),
@@ -291,10 +364,14 @@ def lint_skill(skill: Skill, alerts: list[dict], checks: list[Check], scoring: d
         }
         for s in skill.sections
     ]
-    too_short = [{"heading": s.heading, "line": s.line, "chars": s.body_chars} for s in skill.skipped]
+    too_short = [{"heading": s.heading, "line": s.line, "chars": s.body_chars} for s in skill.short]
+    broken_links = [
+        {"line": s.line, "heading": s.heading, "target": t} for s in skill.sections + skill.short for t in s.broken_links
+    ]
     failed = (
         any(v["level"] == "error" for v in vale)
         or bool(too_short)
+        or bool(broken_links)
         or any(s["failed"] for s in sections)
         or any(r["failed"] for r in skill_results)
     )
@@ -305,6 +382,7 @@ def lint_skill(skill: Skill, alerts: list[dict], checks: list[Check], scoring: d
         "vale": vale,
         "sections": sections,
         "too_short": too_short,
+        "broken_links": broken_links,
         "skill_checks": skill_results,
     }
 
@@ -325,13 +403,16 @@ def render(report: dict, scoring: dict) -> str:
     out.append(f"  Sections (pass {g['pass']:.2f}, good {g['good']:.2f}, perfect {g['perfect']:.2f})")
     for s in report["sections"]:
         values = " ".join(f"{k}={v:.2f}" for k, v in s["values"].items())
-        out.append(f"    {s['line']:>4}  {s['grade']:<7} {s['score']:.2f}  {s['chars']:>5} chars  {s['heading']}")
+        role = " (route)" if s["role"] == "route" else ""
+        out.append(f"    {s['line']:>4}  {s['grade']:<7} {s['score']:.2f}  {s['chars']:>5} chars  {s['heading']}{role}")
         out.append(f"          {values}")
     for s in report["too_short"]:
         out.append(
             f"    {s['line']:>4}  FAIL too short ({s['chars']} < {scoring['min_section_chars']} chars): "
             f"{s['heading']} does not deserve its own section"
         )
+    for b in report["broken_links"]:
+        out.append(f"    {b['line']:>4}  FAIL broken link: {b['target']} does not exist ({b['heading']})")
     out.append("  Skill")
     for r in report["skill_checks"]:
         limit = f"max {r['fail_above']}" if r["fail_above"] is not None else f"min {r['fail_below']}"
@@ -348,7 +429,7 @@ def main() -> int:
     try:
         if not os.environ.get("TYPESAFE_API_KEY"):
             raise LintError("TYPESAFE_API_KEY is not set. Create a key at https://console.typesafe.ai/.")
-        scoring, checks = load_config()
+        scoring, checks, route = load_config()
         files = find_skills(args.paths)
         if not files:
             return 0
@@ -364,7 +445,7 @@ def main() -> int:
         reports = [
             frontmatter_report(f, p)
             if isinstance(p, FrontmatterError)
-            else lint_skill(p, alerts.get(str(f), []), checks, scoring)
+            else lint_skill(p, alerts.get(str(f), []), checks, route, scoring)
             for f, p in parsed.items()
         ]
     except LintError as e:

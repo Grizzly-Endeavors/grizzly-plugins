@@ -1,0 +1,11 @@
+slice: section
+applies_to: [route]
+direction: positive
+weight: 3
+question:
+  type: score
+  instructions: Does `section.text` say when its case applies clearly enough that the reader can tell whether that case is the current one?
+  criteria:
+    - "Vague: the condition could fit almost any situation."
+    - "Partly clear: the condition names the case but leaves its edges unclear."
+    - "Clear: the condition names observable signs that tell the reader this case is the current one."

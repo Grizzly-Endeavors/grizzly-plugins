@@ -27,7 +27,8 @@ Exit codes: `0` pass, `1` a finding failed the gate, `2` a usage or environment 
 
 - Frontmatter an agent cannot load: missing, not closed, invalid YAML, or without a `name` and `description`. The file gets no other checks until this is fixed.
 - A Vale alert at `error` level (prohibitions, attached fences, shouted negations, history).
-- A section whose body is shorter than `min_section_chars`: it does not deserve its own section.
+- A section whose body is shorter than `min_section_chars`: it does not deserve its own section. Routes are exempt, and so is a heading whose only text is a short lead-in above its subsections.
+- A link to a file inside the skill that does not exist.
 - A section whose score is below the pass grade (0.60).
 - A skill-level check past its limit (`skill-formatting`, `description-trigger`).
 
@@ -49,6 +50,17 @@ A check's `curve` (default 1) raises its value to that power before weighting. A
 The overall score averages the section scores and skill-level checks, then multiplies by `min(1, skill_length_ref_chars / body chars) ^ skill_length_exponent`. Every character of `SKILL.md` is context the model reads, so a shorter skill of the same quality scores higher.
 
 Every check value is 0–1: a Noul's probability, or a Score's level divided by its highest level. `chars` is the section body length, so a long section needs more quality to pass than a short one. The parameters live in `lint/scoring.yml`, including the pinned Jev model.
+
+## Routes
+
+A route is a section whose job is to say when a case applies and send the reader to a file for that case's instructions, such as `### Unit tests` followed by a condition and `Read: references/unit-tests.md`. Routing detail into reference files is a valid way to shorten a skill.
+
+A section is a route candidate when it links to a file inside the skill: a Markdown link, or an inline code path whose first directory exists in the skill. Candidates are also asked the question in `lint/route.yml`; at or above its threshold the section is scored as a route:
+
+- with the checks whose `applies_to` includes `route` (`route-condition`, `route-distinct`, and the prohibitions, history and formatting checks),
+- with no size minimum and no size penalty.
+
+`route-distinct` compares a route with its sibling routes (candidates at the same level under the same heading) and is skipped for a route without siblings.
 
 ## Pre-commit hook
 
@@ -84,6 +96,7 @@ Both forms run on staged `SKILL.md` files. `uv`, `vale` and `TYPESAFE_API_KEY` m
 
 ```yaml
 slice: section          # section | skill | description
+applies_to: [instruction, route]  # section checks: which section roles use it (default [instruction])
 direction: negative     # positive adds to the section score, negative subtracts
 weight: 3               # section checks: weight in the section score
 curve: 2                # optional: raise the value to this power before weighting

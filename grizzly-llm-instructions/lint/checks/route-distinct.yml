@@ -1,0 +1,12 @@
+slice: section
+applies_to: [route]
+direction: positive
+weight: 3
+# Asked only when the section has sibling routes; `other_routes` holds their text.
+question:
+  type: score
+  instructions: Is the case in `section.text` distinct from the cases in `other_routes`, so that a given situation fits only one of them?
+  criteria:
+    - "Overlapping: many situations fit this route and another one."
+    - "Partly distinct: the routes differ, but some situations fit more than one."
+    - "Distinct: a given situation fits only one of the routes."

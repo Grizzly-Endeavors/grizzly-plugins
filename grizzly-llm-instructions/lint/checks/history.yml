@@ -1,4 +1,5 @@
 slice: section
+applies_to: [instruction, route]
 direction: negative
 weight: 5
 question:
