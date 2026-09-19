@@ -1,0 +1,10 @@
+slice: section
+direction: negative
+weight: 1.5
+question:
+  type: score
+  instructions: How much of `section.text` is information the reader does not need to do the work described in `skill_purpose`?
+  criteria:
+    - "None: every sentence gives the reader something it uses to do the work."
+    - "Some: a few sentences restate other sentences or explain things the reader does not use."
+    - "Much: a large part of the section is restatement, background, or detail the reader does not use."
