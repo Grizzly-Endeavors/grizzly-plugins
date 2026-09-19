@@ -186,7 +186,6 @@ async def judge(skill: Skill, checks: list[Check], model: str) -> dict[str, floa
                     "note": SECTION_FRAMING,
                     "skill_purpose": skill.description,
                     "section": {"heading": s.heading, "text": s.text},
-                    "other_sections": [o.heading for o in skill.sections if o is not s],
                 },
                 by_slice["section"],
             )

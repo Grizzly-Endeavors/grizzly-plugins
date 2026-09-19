@@ -1,0 +1,10 @@
+slice: section
+direction: negative
+weight: 5
+question:
+  type: score
+  instructions: Is `section.text` mainly a collection of values for the reader to look up, such as colors, sizes, names, or parameters, as opposed to guidance for doing a task?
+  criteria:
+    - "Guidance: the section explains how to do a task, and any values serve that task."
+    - "Mixed: the section guides a task but also carries a block of lookup values that could live in a reference file."
+    - "Values: the section is mainly a table or list of values to look up."
