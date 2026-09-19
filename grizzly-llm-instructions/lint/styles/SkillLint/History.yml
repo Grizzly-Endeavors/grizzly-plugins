@@ -1,0 +1,16 @@
+extends: existence
+message: "History '%s': describe the skill as it is now."
+level: error
+ignorecase: true
+tokens:
+  - "previously"
+  - "formerly"
+  - "originally"
+  - "used to"
+  - "no longer"
+  - "(?:was|were|has been|have been) (?:removed|dropped|replaced|deprecated)"
+  - "deprecated"
+  - "(?:prior|previous|earlier|old|older) version"
+  - "retained only"
+  - "superseded"
+  - "legacy"

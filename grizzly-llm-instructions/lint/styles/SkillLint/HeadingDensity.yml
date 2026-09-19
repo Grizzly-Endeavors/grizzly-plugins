@@ -1,0 +1,5 @@
+extends: metric
+message: "Heading density is %s per 100 words; merge sections that do not need their own heading."
+level: warning
+formula: (heading_h2 + heading_h3 + heading_h4) / words * 100
+condition: "> 2.5"

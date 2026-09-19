@@ -1,0 +1,6 @@
+extends: existence
+message: "Guarding word '%s': check that the restriction is needed."
+level: suggestion
+ignorecase: true
+tokens:
+  - "only"

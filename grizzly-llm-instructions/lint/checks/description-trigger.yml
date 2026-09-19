@@ -1,0 +1,10 @@
+slice: description
+direction: positive
+fail_below: 0.5
+question:
+  type: score
+  instructions: Does `description` tell an agent when to load this skill, meaning the tasks, requests, or situations it applies to?
+  criteria:
+    - "No: the description explains what the skill contains or how it works, with little about when to use it."
+    - "Mixed: it says when to use the skill, but much of it is content that only matters once the skill is loaded."
+    - "Yes: nearly all of it names the tasks, requests, or situations that should load the skill."

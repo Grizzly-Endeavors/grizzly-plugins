@@ -1,0 +1,14 @@
+extends: existence
+message: "Prohibition '%s': describe the behavior you want, or enforce it in the environment."
+level: error
+ignorecase: true
+tokens:
+  - "don't"
+  - "do not"
+  - "never"
+  - "avoid"
+  - "must not"
+  - "mustn't"
+  - "should not"
+  - "shouldn't"
+  - "cannot be used"

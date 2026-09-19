@@ -1,0 +1,6 @@
+extends: existence
+message: "Passive voice '%s': name who does the action (ASD-STE100)."
+level: warning
+ignorecase: true
+raw:
+  - '\b(?:am|is|are|was|were|be|been|being)\s+(?:\w+ed|built|done|found|given|known|made|put|run|seen|sent|set|shown|taken|written|kept|left|held|told|brought|chosen|drawn|hidden|read)\b'

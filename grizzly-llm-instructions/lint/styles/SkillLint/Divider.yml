@@ -1,0 +1,11 @@
+extends: script
+message: "Horizontal rule: headings already separate sections."
+level: warning
+scope: raw
+script: |
+  text := import("text")
+  matches := []
+  // A thematic break needs a blank line before it; the frontmatter's closing --- has none.
+  for m in text.re_find(`\n\n---+[ \t]*\n`, scope, -1) || [] {
+    matches = append(matches, {begin: m[0].begin + 2, end: m[0].end - 1})
+  }

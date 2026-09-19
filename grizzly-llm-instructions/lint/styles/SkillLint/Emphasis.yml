@@ -1,0 +1,6 @@
+extends: existence
+message: "Emphasis word '%s': state the instruction plainly and give its reason."
+level: warning
+ignorecase: false
+raw:
+  - '\b(?:IMPORTANT|CRITICAL|MUST|ALWAYS|REQUIRED|MANDATORY|WARNING|[Cc]ritical|[Cc]rucial|[Ee]ssential|[Aa]bsolutely|[Ee]xtremely important|[Uu]nder no circumstances)\b'

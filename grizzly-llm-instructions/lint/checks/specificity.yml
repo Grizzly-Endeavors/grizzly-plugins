@@ -1,0 +1,10 @@
+slice: section
+direction: positive
+weight: 1
+question:
+  type: score
+  instructions: How specific is `section.text` about what the reader must do or produce?
+  criteria:
+    - "Vague: general advice that fits almost any task, such as 'use good judgment' or 'make it clear'."
+    - "Partly specific: names concrete things but leaves the key decisions to the reader."
+    - "Specific: names the exact values, tools, files, conditions, or examples the reader needs to act."

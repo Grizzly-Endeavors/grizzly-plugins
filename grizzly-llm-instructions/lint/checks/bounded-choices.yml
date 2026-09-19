@@ -1,0 +1,10 @@
+slice: section
+direction: positive
+weight: 1
+question:
+  type: score
+  instructions: Does `section.text` give the reader a bounded set of options or explicit limits to work within?
+  criteria:
+    - "Open: the reader must invent the options and decide the limits alone."
+    - "Partly bounded: some options or limits are given, but the main decision is open."
+    - "Bounded: the section gives a defined set of options or explicit limits, such as 'pick one of these three' or 'at most one diagram per slide'."

@@ -1,0 +1,13 @@
+# Model the Jev checks are calibrated against. Change it only together with a recalibration.
+model: jev-1.13.0
+
+# A section whose body (text below its heading) is shorter than this is a finding.
+min_section_chars: 200
+
+# Section score = quality / max(1, chars / size_unit_chars) ** size_exponent
+# where quality = (sum(weight * positive) - sum(weight * negative)) / sum(positive weights).
+size_unit_chars: 1000
+size_exponent: 0.5
+
+# A section scoring below this is a finding.
+min_section_score: 0.35

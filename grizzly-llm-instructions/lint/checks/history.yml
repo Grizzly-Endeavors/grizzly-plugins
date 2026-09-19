@@ -1,0 +1,10 @@
+slice: section
+direction: negative
+weight: 3
+question:
+  type: score
+  instructions: How much of `section.text` describes the history of the instructions themselves, such as earlier versions, removed options, past mistakes, deprecations, or where the content came from?
+  criteria:
+    - "None: the section describes only how things are now."
+    - "An aside: one brief mention of history or origin."
+    - "Substantial: the section explains past versions, removals, or past mistakes at length."

@@ -1,0 +1,10 @@
+slice: skill
+direction: negative
+fail_above: 0.5
+question:
+  type: score
+  instructions: How heavy is the formatting in `skill.text` compared to what the content needs?
+  criteria:
+    - "Plain: prose, lists, and tables, with headings for major sections and bold on a few key terms."
+    - "Noticeable: frequent bold, many small headings, or some decorative symbols, but the content still reads clearly."
+    - "Heavy: bold on most lines, horizontal rules between sections, decorative symbols or emoji, or diagrams that add no information."

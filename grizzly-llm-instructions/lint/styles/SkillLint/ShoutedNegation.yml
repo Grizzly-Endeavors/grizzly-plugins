@@ -1,0 +1,6 @@
+extends: existence
+message: "Shouted negation '%s': describe the behavior you want."
+level: error
+scope: raw
+raw:
+  - '(?:\b(?:NO|NOT|NEVER|DON.T|DO NOT|AVOID)\b|[❌🚫⛔✗✘])'

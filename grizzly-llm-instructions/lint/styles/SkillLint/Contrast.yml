@@ -1,0 +1,7 @@
+extends: existence
+message: "Contrast '%s' names the unwanted alternative; describe only the wanted one."
+level: warning
+ignorecase: true
+tokens:
+  - "instead of"
+  - "rather than"

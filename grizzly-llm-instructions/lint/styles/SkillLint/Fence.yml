@@ -1,0 +1,6 @@
+extends: existence
+message: "Attached fence '%s': the positive statement is enough; drop the excluded alternative."
+level: error
+ignorecase: false
+raw:
+  - '(?:(?:^|[.!?:]\s+)Not\b|,\s+not\b|\s[—–-]{1,2}\s*not\b)'

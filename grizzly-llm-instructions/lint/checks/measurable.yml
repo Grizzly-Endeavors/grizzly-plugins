@@ -1,0 +1,9 @@
+slice: section
+direction: positive
+weight: 1
+question:
+  type: noul
+  instructions: Does `section.text` give criteria the reader can check the finished work against, such as a count, an exact value, or an observable property of the output?
+  criteria:
+    true: The reader can check the finished work against at least one concrete criterion from the section.
+    false: The section gives no criterion the reader could check the finished work against.

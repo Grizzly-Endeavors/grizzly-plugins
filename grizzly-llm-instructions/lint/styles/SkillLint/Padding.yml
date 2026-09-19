@@ -1,0 +1,16 @@
+extends: existence
+message: "Padding '%s': cut it."
+level: warning
+ignorecase: true
+tokens:
+  - "it(?:'s| is) important to note(?: that)?"
+  - "it(?:'s| is) worth noting(?: that)?"
+  - "note that"
+  - "in order to"
+  - "make sure to"
+  - "be sure to"
+  - "keep in mind(?: that)?"
+  - "please"
+  - "simply"
+  - "basically"
+  - "actually"

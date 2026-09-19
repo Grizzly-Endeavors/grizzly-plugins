@@ -1,0 +1,7 @@
+extends: existence
+message: "Chained steps '%s': give one instruction per sentence (ASD-STE100)."
+level: suggestion
+ignorecase: true
+tokens:
+  - ",? and then"
+  - "; then"

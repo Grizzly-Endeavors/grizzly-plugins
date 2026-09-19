@@ -1,0 +1,12 @@
+extends: script
+message: "Bold density is over 2 spans per 100 words; keep bold for the few terms a reader must not miss."
+level: warning
+scope: raw
+script: |
+  text := import("text")
+  matches := []
+  bold := text.re_find(`\*\*[^*\n]+\*\*`, scope, -1)
+  words := text.re_find(`\w+`, scope, -1)
+  if bold != undefined && words != undefined && len(bold) * 100 > len(words) * 2 {
+    matches = append(matches, {begin: bold[0][0].begin, end: bold[0][0].end})
+  }

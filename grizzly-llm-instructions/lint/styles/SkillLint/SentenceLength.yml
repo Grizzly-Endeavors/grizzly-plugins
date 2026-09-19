@@ -1,0 +1,6 @@
+extends: occurrence
+message: "Sentence is over 25 words (ASD-STE100: 20 for procedures, 25 for descriptions)."
+level: warning
+scope: sentence
+max: 25
+token: '\b[\w''’-]+\b'

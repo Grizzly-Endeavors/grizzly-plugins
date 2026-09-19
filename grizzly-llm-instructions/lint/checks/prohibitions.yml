@@ -1,0 +1,11 @@
+slice: section
+direction: negative
+weight: 3
+question:
+  type: score
+  instructions: How much of `section.text` describes what the reader must avoid, instead of what the reader must do?
+  criteria:
+    - "None: the section describes only what to do."
+    - "Some: one or two prohibitions or warnings next to mostly positive instructions."
+    - "Much: prohibitions, warnings, or lists of mistakes make up a large part of the section."
+    - "Mostly: the section defines the target mainly by what to avoid."
