@@ -1,0 +1,6 @@
+- id: skill-lint
+  name: skill-lint
+  description: Lint agent skills (SKILL.md) with Vale rules and TypeSafe Jev judgments.
+  entry: grizzly-llm-instructions/bin/skill-lint
+  language: script
+  files: (^|/)SKILL\.md$

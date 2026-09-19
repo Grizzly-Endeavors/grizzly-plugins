@@ -1,0 +1,13 @@
+{
+  "name": "grizzly-llm-instructions",
+  "description": "Lint agent skills with Vale rules and TypeSafe Jev judgments: line-level findings for prohibitions, history and padding, plus section and skill scores for goal, specificity, bounded choices, measurable criteria and reasons. Runs as a CLI or a pre-commit hook. Requires uv, Vale and a TYPESAFE_API_KEY.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Grizzly Endeavors",
+    "email": "bearflinn@gmail.com"
+  },
+  "homepage": "https://github.com/Grizzly-Endeavors/grizzly-plugins",
+  "repository": "https://github.com/Grizzly-Endeavors/grizzly-plugins",
+  "license": "MIT",
+  "keywords": ["skills", "linter", "vale", "typesafe", "jev", "pre-commit", "prompts"]
+}

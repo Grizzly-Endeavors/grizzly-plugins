@@ -2,12 +2,13 @@
 
 A personal [Claude Code](https://claude.com/claude-code) plugin marketplace for the Grizzly Endeavors project family. It exists so a single set of skills, agents, and commands stays in sync across every machine I work on — install once per machine, update from git, never copy files by hand again.
 
-It ships four plugins so you only install what a given machine actually needs:
+It ships five plugins so you only install what a given machine actually needs:
 
 - **`grizzly-tools`** — the general-purpose toolkit: reasoning lenses, debugging discipline, code craftsmanship, planning/process, LLM-content authoring, plus supporting agents and the `/clean` command. Useful on any project.
 - **`grizzly-misc`** — hyper-specific skills bound to a particular tool, engine, project, or environment. Only worth installing where that context applies.
 - **`grizzly-mail`** — an MCP server giving Claude its own mailbox (`claude@grizzly-endeavors.com`) for end-to-end mail testing. Only works on machines holding the 1Password operator token.
 - **`grizzly-tasks`** — a skill for managing tasks in the self-hosted Vikunja from the terminal with the `vja` CLI, including first-time setup on a new machine. Only useful where a Vikunja API token can be set up.
+- **`grizzly-llm-instructions`** — `skill-lint`, a linter for agent skills that combines Vale rules with TypeSafe Jev judgments. Runs as a CLI or pre-commit hook; needs uv, Vale and a TypeSafe API key.
 
 ## Install
 
@@ -17,6 +18,7 @@ It ships four plugins so you only install what a given machine actually needs:
 /plugin install grizzly-misc@grizzly-plugins    # optional, context-specific
 /plugin install grizzly-mail@grizzly-plugins    # optional, Grizzly machines only
 /plugin install grizzly-tasks@grizzly-plugins   # optional, machines where you manage Vikunja tasks
+/plugin install grizzly-llm-instructions@grizzly-plugins  # optional, where you lint skills
 ```
 
 Update later with `/plugin marketplace update grizzly-plugins`.
@@ -87,6 +89,10 @@ An MCP server (single-file stdlib Python, no dependencies) bundling five tools �
 ## grizzly-tasks
 
 - **vja** — manage tasks in the self-hosted Vikunja (todo.grizzly-endeavors.com) with the `vja` CLI: find, add, edit, complete, defer, relate and delete tasks, plus projects and labels. Its `references/first-time-setup.md` installs and configures vja on a new machine; the API token comes from your Vikunja account settings.
+
+## grizzly-llm-instructions
+
+`skill-lint` lints `SKILL.md` files: Vale reports line-level findings (prohibitions, history, padding, ASD-STE100 mechanics) and Jev scores each section, the skill body and the description. It fails a commit on any gating finding; see [grizzly-llm-instructions/README.md](grizzly-llm-instructions/README.md) for requirements, scoring and pre-commit setup.
 
 ## License
 

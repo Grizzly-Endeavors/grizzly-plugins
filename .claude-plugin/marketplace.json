@@ -35,6 +35,13 @@
       "description": "Manage tasks in the self-hosted Vikunja (todo.grizzly-endeavors.com) from the terminal with the vja CLI, including first-time setup on a new machine. Requires a Vikunja API token on the machine.",
       "category": "workflow",
       "tags": ["skills", "vikunja", "tasks", "todo", "cli", "homelab"]
+    },
+    {
+      "name": "grizzly-llm-instructions",
+      "source": "./grizzly-llm-instructions",
+      "description": "Lint agent skills with Vale rules and TypeSafe Jev judgments, as a CLI or pre-commit hook. Requires uv, Vale and a TYPESAFE_API_KEY.",
+      "category": "workflow",
+      "tags": ["skills", "linter", "vale", "typesafe", "pre-commit", "prompts"]
     }
   ]
 }
