@@ -3,8 +3,8 @@ direction: positive
 weight: 3
 question:
   type: score
-  instructions: Do the instructions in `section.text` come with the reason for them, so the reader can apply them to cases the section does not list?
+  instructions: Does `section.text` explain why this part of the work matters to the people it serves? Consequences attached to single instructions or list items do not count; the explanation is about the part of the work as a whole.
   criteria:
-    - "No reasons: the instructions are bare commands or bare data."
-    - "Some reasons: a few instructions explain what they achieve."
-    - "Reasoned: the main instructions each say what they achieve or why they matter."
+    - "None: the section never says why this part of the work matters."
+    - "Implied: the stakes can only be pieced together from consequences attached to individual instructions or items."
+    - "Stated: the section says why this part of the work matters to the people it serves, such as 'walls of text lose viewers even for engaging speakers'."

@@ -2,8 +2,9 @@ slice: section
 direction: positive
 weight: 3
 question:
-  type: noul
-  instructions: Does `section.text` state the goal of the work it guides, meaning the outcome that good work produces, and not only the steps to take?
+  type: score
+  instructions: Does `section.text` state the outcome its work should produce for the people it serves, such as the viewer, user, or maintainer?
   criteria:
-    true: The section says what a good result looks like or what the work must achieve.
-    false: The section gives steps, rules, or reference data without saying what they achieve.
+    - "None: the section gives steps, rules, definitions, or data, with no outcome for anyone."
+    - "Implied: an outcome can be inferred, or the section names an aim for the work itself, such as 'fix the root cause', without saying what it gives the people it serves."
+    - "Stated: the section states what good work gives the people it serves, such as 'slides that hold a viewer's attention'."

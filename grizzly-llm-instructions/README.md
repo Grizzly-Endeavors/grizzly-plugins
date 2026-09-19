@@ -47,7 +47,7 @@ The reported section score rescales this raw score linearly: `pass_raw_score` re
 
 A check's `curve` (default 1) raises its value to that power before weighting. A curve of 2 on a negative check forgives a trace of the problem while a pervasive one still costs the full weight.
 
-The overall score averages the section scores and skill-level checks, then multiplies by `min(1, skill_length_ref_chars / body chars) ^ skill_length_exponent`. Every character of `SKILL.md` is context the model reads, so a shorter skill of the same quality scores higher.
+The overall score averages the section scores weighted by section size, counting too-short sections as 0, then multiplies by `min(1, skill_length_ref_chars / body chars) ^ skill_length_exponent`. Every character of `SKILL.md` is context the model reads, so a shorter skill of the same quality scores higher. Skill-level checks gate on their own and stay out of the overall score.
 
 Every check value is 0–1: a Noul's probability, or a Score's level divided by its highest level. `chars` is the section body length, so a long section needs more quality to pass than a short one. The parameters live in `lint/scoring.yml`, including the pinned Jev model.
 

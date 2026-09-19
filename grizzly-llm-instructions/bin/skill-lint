@@ -339,12 +339,13 @@ def lint_skill(skill: Skill, alerts: list[dict], checks: list[Check], route: dic
         }
         for c in skill_checks
     ]
-    # Tracking number: every section score and every skill-level check as a 0..1 quality.
-    qualities = [display_score(s.score, scoring) for s in skill.sections]
-    qualities += [1 - r["value"] if c.direction == "negative" else r["value"] for c, r in zip(skill_checks, skill_results)]
+    # Tracking number: section scores weighted by size, with too-short sections counted as 0.
+    # Skill-level checks gate on their own and stay out of it.
+    weighted = sum(display_score(s.score, scoring) * s.body_chars for s in skill.sections)
+    total_chars = sum(s.body_chars for s in skill.sections + skill.short)
     # Every character of SKILL.md is context the model reads, so a longer skill needs more quality.
     length_factor = min(1.0, scoring["skill_length_ref_chars"] / len(skill.body)) ** scoring["skill_length_exponent"]
-    overall = round(100 * length_factor * sum(qualities) / len(qualities))
+    overall = round(100 * length_factor * weighted / total_chars) if total_chars else 0
 
     vale = [
         {"line": a["Line"], "column": a["Span"][0], "level": a["Severity"], "rule": a["Check"], "message": a["Message"]}
