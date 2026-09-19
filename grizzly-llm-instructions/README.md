@@ -25,6 +25,7 @@ Exit codes: `0` pass, `1` a finding failed the gate, `2` a usage or environment 
 
 ## What fails the gate
 
+- Frontmatter an agent cannot load: missing, not closed, invalid YAML, or without a `name` and `description`. The file gets no other checks until this is fixed.
 - A Vale alert at `error` level (prohibitions, attached fences, shouted negations, history).
 - A section whose body is shorter than `min_section_chars`: it does not deserve its own section.
 - A section whose score is below the pass grade (0.60).

@@ -49,6 +49,10 @@ class LintError(Exception):
     """A usage or environment problem that stops the run."""
 
 
+class FrontmatterError(Exception):
+    """A skill whose frontmatter an agent could not load. Reported as a finding."""
+
+
 @dataclass
 class Check:
     id: str
@@ -97,14 +101,21 @@ def load_config() -> tuple[dict, list[Check]]:
 
 def parse_skill(path: Path, min_chars: int) -> Skill:
     lines = path.read_text().splitlines()
-    name, description, start = "", "", 0
-    if lines and lines[0].strip() == "---":
-        end = next((i for i in range(1, len(lines)) if lines[i].strip() == "---"), None)
-        if end is None:
-            raise LintError(f"{path}: frontmatter is not closed")
+    if not lines or lines[0].strip() != "---":
+        raise FrontmatterError("missing: the file must start with a --- frontmatter block")
+    end = next((i for i in range(1, len(lines)) if lines[i].strip() == "---"), None)
+    if end is None:
+        raise FrontmatterError("not closed: no second --- line")
+    try:
         meta = yaml.safe_load("\n".join(lines[1:end])) or {}
-        name, description = str(meta.get("name", "")), str(meta.get("description", ""))
-        start = end + 1
+    except yaml.YAMLError as e:
+        mark = getattr(e, "problem_mark", None)
+        where = f" at line {mark.line + 2}" if mark else ""  # +1 for 1-based, +1 for the opening ---
+        raise FrontmatterError(f"invalid YAML{where}: {getattr(e, 'problem', None) or e}") from e
+    if not isinstance(meta, dict) or not meta.get("name") or not meta.get("description"):
+        raise FrontmatterError("needs both a name and a description")
+    name, description = str(meta["name"]), str(meta["description"])
+    start = end + 1
 
     # Heading-delimited sections; headings inside code fences do not count.
     raw: list[tuple[int, int, str, list[str]]] = []  # (line, level, heading, body lines)
@@ -293,7 +304,13 @@ def lint_skill(skill: Skill, alerts: list[dict], checks: list[Check], scoring: d
     }
 
 
+def frontmatter_report(path: Path, error: FrontmatterError) -> dict:
+    return {"path": str(path), "failed": True, "frontmatter_error": str(error)}
+
+
 def render(report: dict, scoring: dict) -> str:
+    if "frontmatter_error" in report:
+        return f"{report['path']}  FAIL\n  Frontmatter {report['frontmatter_error']}"
     out = [f"{report['path']}  overall {report['overall']}/100  {'FAIL' if report['failed'] else 'pass'}"]
     if report["vale"]:
         out.append("  Vale")
@@ -330,10 +347,20 @@ def main() -> int:
         files = find_skills(args.paths)
         if not files:
             return 0
-        alerts = run_vale(files)
+        parsed: dict[Path, Skill | FrontmatterError] = {}
+        for f in files:
+            try:
+                parsed[f] = parse_skill(f, scoring["min_section_chars"])
+            except FrontmatterError as e:
+                parsed[f] = e
+        # Vale stops on frontmatter it cannot parse, so it only sees the loadable skills.
+        loadable = [f for f, p in parsed.items() if isinstance(p, Skill)]
+        alerts = run_vale(loadable) if loadable else {}
         reports = [
-            lint_skill(parse_skill(f, scoring["min_section_chars"]), alerts.get(str(f), []), checks, scoring)
-            for f in files
+            frontmatter_report(f, p)
+            if isinstance(p, FrontmatterError)
+            else lint_skill(p, alerts.get(str(f), []), checks, scoring)
+            for f, p in parsed.items()
         ]
     except LintError as e:
         print(f"skill-lint: {e}", file=sys.stderr)
