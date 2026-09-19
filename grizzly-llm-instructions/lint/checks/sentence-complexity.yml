@@ -1,9 +1,9 @@
 slice: section
 direction: negative
-weight: 1.5
+weight: 0.75
 question:
   type: score
-  instructions: How hard are the sentences in `section.text` to parse?
+  instructions: How hard are the sentences in `section.text` to read?
   criteria:
     - "Plain: most sentences carry one idea in a direct subject-verb-object order."
     - "Mixed: several sentences stack clauses, qualifiers, or asides, but most read plainly."

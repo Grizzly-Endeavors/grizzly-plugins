@@ -38,11 +38,15 @@ Vale warnings and suggestions are reported but do not fail the gate. The overall
 Each section is scored from the section checks in `lint/checks/`:
 
 ```
-quality = (sum(weight × positive) − sum(weight × negative)) / sum(positive weights)
+quality = (sum(weight × positive) − sum(weight × negative ^ curve)) / sum(positive weights)
 score   = quality / max(1, chars / size_unit_chars) ^ size_exponent
 ```
 
 The reported section score rescales this raw score linearly: `pass_raw_score` reads as 0.60 (pass) and a raw 1.0 reads as 1.0, clamped to 0–1. Grades: below 0.60 fails, 0.60 passes, 0.80 is good, 0.90–1.00 is perfect. The JSON report carries the raw score too.
+
+A check's `curve` (default 1) raises its value to that power before weighting. A curve of 2 on a negative check forgives a trace of the problem while a pervasive one still costs the full weight.
+
+The overall score averages the section scores and skill-level checks, then multiplies by `min(1, skill_length_ref_chars / body chars) ^ skill_length_exponent`. Every character of `SKILL.md` is context the model reads, so a shorter skill of the same quality scores higher.
 
 Every check value is 0–1: a Noul's probability, or a Score's level divided by its highest level. `chars` is the section body length, so a long section needs more quality to pass than a short one. The parameters live in `lint/scoring.yml`, including the pinned Jev model.
 
@@ -82,6 +86,7 @@ Both forms run on staged `SKILL.md` files. `uv`, `vale` and `TYPESAFE_API_KEY` m
 slice: section          # section | skill | description
 direction: negative     # positive adds to the section score, negative subtracts
 weight: 3               # section checks: weight in the section score
+curve: 2                # optional: raise the value to this power before weighting
 fail_above: 0.5         # skill and description checks: gate limit (or fail_below)
 question:               # passed to Jev as-is: type noul or score, instructions, criteria
   type: score

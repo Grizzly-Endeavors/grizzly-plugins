@@ -10,7 +10,7 @@ size_unit_chars: 1000
 size_exponent: 0.25
 
 # The raw section score that passes. This is the calibration knob.
-pass_raw_score: 0.35
+pass_raw_score: 0.45
 
 # Reported scores rescale the raw score linearly so pass_raw_score reads as the
 # pass grade and a raw 1.0 reads as 1.0, clamped to 0..1.
@@ -18,3 +18,8 @@ grades:
   pass: 0.60
   good: 0.80
   perfect: 0.90
+
+# The overall score (a tracking number) is multiplied by
+# min(1, skill_length_ref_chars / body chars) ** skill_length_exponent.
+skill_length_ref_chars: 8500
+skill_length_exponent: 0.5
