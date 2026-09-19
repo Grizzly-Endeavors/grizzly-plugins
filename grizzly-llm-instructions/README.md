@@ -27,7 +27,7 @@ Exit codes: `0` pass, `1` a finding failed the gate, `2` a usage or environment 
 
 - A Vale alert at `error` level (prohibitions, attached fences, shouted negations, history).
 - A section whose body is shorter than `min_section_chars`: it does not deserve its own section.
-- A section whose score is below `min_section_score`.
+- A section whose score is below the pass grade (0.60).
 - A skill-level check past its limit (`skill-formatting`, `description-trigger`).
 
 Vale warnings and suggestions are reported but do not fail the gate. The overall score (0–100) is a tracking number and does not fail the gate.
@@ -40,6 +40,8 @@ Each section is scored from the section checks in `lint/checks/`:
 quality = (sum(weight × positive) − sum(weight × negative)) / sum(positive weights)
 score   = quality / max(1, chars / size_unit_chars) ^ size_exponent
 ```
+
+The reported section score rescales this raw score linearly: `pass_raw_score` reads as 0.60 (pass) and a raw 1.0 reads as 1.0, clamped to 0–1. Grades: below 0.60 fails, 0.60 passes, 0.80 is good, 0.90–1.00 is perfect. The JSON report carries the raw score too.
 
 Every check value is 0–1: a Noul's probability, or a Score's level divided by its highest level. `chars` is the section body length, so a long section needs more quality to pass than a short one. The parameters live in `lint/scoring.yml`, including the pinned Jev model.
 

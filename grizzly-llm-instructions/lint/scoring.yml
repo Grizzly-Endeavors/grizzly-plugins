@@ -9,5 +9,12 @@ min_section_chars: 200
 size_unit_chars: 1000
 size_exponent: 0.5
 
-# A section scoring below this is a finding.
-min_section_score: 0.35
+# The raw section score that passes. This is the calibration knob.
+pass_raw_score: 0.35
+
+# Reported scores rescale the raw score linearly so pass_raw_score reads as the
+# pass grade and a raw 1.0 reads as 1.0, clamped to 0..1.
+grades:
+  pass: 0.60
+  good: 0.80
+  perfect: 0.90
