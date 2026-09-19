@@ -7,7 +7,7 @@ min_section_chars: 200
 # Section score = quality / max(1, chars / size_unit_chars) ** size_exponent
 # where quality = (sum(weight * positive) - sum(weight * negative)) / sum(positive weights).
 size_unit_chars: 1000
-size_exponent: 0.5
+size_exponent: 0.25
 
 # The raw section score that passes. This is the calibration knob.
 pass_raw_score: 0.35

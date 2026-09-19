@@ -88,4 +88,4 @@ question:               # passed to Jev as-is: type noul or score, instructions,
   criteria: ["None: ...", "Some: ...", "Much: ..."]
 ```
 
-Questions reference the state by path: `section.text` and `section.heading` for section checks, `skill.text` for skill checks, and `description` for description checks. Section state also carries `skill_purpose`, the skill's description.
+Questions reference the state by path: `section.text` and `section.heading` for section checks, `skill.text` for skill checks, and `description` for description checks. Section state also carries `skill_purpose` (the skill's description) and `other_sections` (the other section headings).

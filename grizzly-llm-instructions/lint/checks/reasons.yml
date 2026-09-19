@@ -1,6 +1,6 @@
 slice: section
 direction: positive
-weight: 1
+weight: 3
 question:
   type: score
   instructions: Do the instructions in `section.text` come with the reason for them, so the reader can apply them to cases the section does not list?

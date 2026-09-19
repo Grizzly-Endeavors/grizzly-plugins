@@ -1,6 +1,6 @@
 slice: section
 direction: negative
-weight: 3
+weight: 5
 question:
   type: score
   instructions: How much of `section.text` describes the history of the instructions themselves, such as earlier versions, removed options, past mistakes, deprecations, or where the content came from?

@@ -1,6 +1,6 @@
 slice: section
 direction: negative
-weight: 3
+weight: 1.5
 question:
   type: score
   instructions: Could `section.text` give the same instructions in far fewer words?

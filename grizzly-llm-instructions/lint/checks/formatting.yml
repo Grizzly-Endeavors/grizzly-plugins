@@ -1,6 +1,6 @@
 slice: section
 direction: negative
-weight: 3
+weight: 5
 question:
   type: score
   instructions: How heavy is the formatting in `section.text` compared to what the content needs?

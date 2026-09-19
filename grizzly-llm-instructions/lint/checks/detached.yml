@@ -1,0 +1,10 @@
+slice: section
+direction: negative
+weight: 5
+question:
+  type: score
+  instructions: Is `section.text` a detached list, such as a checklist, a file index, or a quick reference, whose items each belong in the task sections listed in `other_sections`?
+  criteria:
+    - "No: the section guides one task and its items serve that task."
+    - "Partly: the section guides a task but also collects items that belong to other sections."
+    - "Yes: the section mainly collects checks, files, or facts that belong to other sections."

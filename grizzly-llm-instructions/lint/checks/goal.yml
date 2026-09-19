@@ -1,6 +1,6 @@
 slice: section
 direction: positive
-weight: 1
+weight: 3
 question:
   type: noul
   instructions: Does `section.text` state the goal of the work it guides, meaning the outcome that good work produces, and not only the steps to take?

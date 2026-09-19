@@ -2,8 +2,9 @@ slice: section
 direction: positive
 weight: 1
 question:
-  type: noul
-  instructions: Does `section.text` give criteria the reader can check the finished work against, such as a count, an exact value, or an observable property of the output?
+  type: score
+  instructions: Does `section.text` give a rubric the reader can check the finished work against, meaning criteria that separate a good result from a poor one?
   criteria:
-    true: The reader can check the finished work against at least one concrete criterion from the section.
-    false: The section gives no criterion the reader could check the finished work against.
+    - "No rubric: the section gives values, steps, or rules to follow, but no way to judge whether the result is good."
+    - "Partial: one or two criteria describe a good result, but the main quality of the work is left unjudged."
+    - "Rubric: the section states observable criteria that separate good results from poor ones, such as 'each slide carries one visual that states its point'."
