@@ -24,14 +24,15 @@ Jev check fields: engine, slice, direction (positive / negative), weight, questi
 
 ### Slices
 
-- **line-in-section:** state is the heading-delimited section; one question per line, referenced by path (`lines[i]`). Gives section context and line numbers. The section is billed once per request; each extra question costs only its own text (~28 tokens bare, ~65 with criteria, measured).
-- **section:** state is the heading-delimited section; one question per section.
+- **section:** state is the heading-delimited section.
 - **skill:** state is the whole `SKILL.md` body.
 - **description:** state is the frontmatter description.
 
-When line numbers are available, findings use them.
+Line-level findings belong to Vale. Jev findings point at a section, the skill, or the description.
 
-Sections below a minimum size (in characters) fold into their parent heading for scoring, so splitting into more headings cannot dodge the score.
+The state is billed once per request; each extra question costs only its own text (~28 tokens bare, ~65 with criteria, measured). Ask every check for a slice in one request.
+
+A section below the minimum size (in characters) is a finding: "this doesn't deserve a section." It is not scored, so splitting into more headings cannot dodge the composite.
 
 ## Scoring
 
