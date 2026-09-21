@@ -1,0 +1,13 @@
+{
+  "name": "grizzly-laya",
+  "description": "Add the Laya local calibrated decision model to Python projects: pinned loading, question design, agent-run monitoring, and bundled calibrate / fine-tune scripts. Requires a CUDA GPU for fine-tuning.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Grizzly Endeavors",
+    "email": "bearflinn@gmail.com"
+  },
+  "homepage": "https://github.com/Grizzly-Endeavors/grizzly-plugins",
+  "repository": "https://github.com/Grizzly-Endeavors/grizzly-plugins",
+  "license": "MIT",
+  "keywords": ["skills", "laya", "classification", "calibration", "fine-tuning", "agent-monitoring", "gpu"]
+}
