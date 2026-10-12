@@ -46,7 +46,7 @@ Update later with `/plugin marketplace update grizzly-plugins`.
 
 **Planning & process**
 
-- **phase-plan** — decompose a large refactor into a systems-level design doc and a sequence of self-contained, individually-verifiable phases.
+- **orchestrate** — run a body of work as an orchestrator: gather requirements, chunk the work, and drive scout, implementer, reviewer, and sub-orchestrator agents through to merged PRs.
 - **workbench** — build an interactive diagram or browser tool as a self-contained HTML bundle in the personal workbench server.
 - **adr** — create or update Architectural Decision Records that capture the *why* behind non-obvious decisions.
 - **tweaks** — a batch-tweak session lane for a run of small changes on one branch/PR, user-invoked.
@@ -63,7 +63,11 @@ Update later with `/plugin marketplace update grizzly-plugins`.
 - **quick-fix-handler** — handles small, non-blocking issues without interrupting the main task.
 - **tlc-craftsmanship-reviewer** — elevates working code from "done" to "finished" before others build on it.
 - **crank-turner** — works through well-defined, mechanical, repetitive changes (migrations, mass renames) verifiable by tests/linters.
-- **design-doc-reviewer** — reviews a systems-level design doc for ambiguities and missing detail before implementation; pairs with phase-plan.
+- **design-doc-reviewer** — reviews a systems-level design doc for ambiguities and missing detail before implementation.
+- **scout** — answers an orchestrator's questions about a codebase and writes the findings to a report file for the next agent.
+- **implementer** — implements one scoped chunk from an orchestrator's brief in its own worktree and reports done, too big, or blocked.
+- **reviewer** — reviews an orchestrated chunk's diff against its intent and returns approve or changes-needed.
+- **sub-orchestrator** — runs the orchestrate playbook for one cluster on behalf of a parent orchestrator.
 - **ux-nitpicker** — creates, refines, or audits UI/UX work for usability and accessibility.
 - **grug-code-reviewer** — reviews diffs/PRs through the grug-brained lens, flagging premature abstraction and complexity smells.
 - **web-research-analyst** — fetches accurate, up-to-date information from the web and verifies facts against current sources.
