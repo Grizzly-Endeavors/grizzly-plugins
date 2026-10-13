@@ -76,6 +76,7 @@ Every agent writes its full report to that file and returns three things: its st
 | CI fails | Brief an implementer with the PR number and the failing check; it pulls the logs itself. |
 | CI is green and the review approved | Merge the PR. That is the whole verification step. |
 | A report mentions a gap outside its scope | Brief an agent for it if it's in reach, otherwise open an `investigate` issue. |
+| A notification says an agent stopped with background work still running | Nothing. It is waiting on its own command and will report when that finishes. |
 | Agents are running and nothing has returned | Plan the next wave, gather requirements for later work, or give the user a short status. Waiting is part of the job. |
 | You notice yourself about to do a small piece of work | Write a brief for it instead. |
 | All work is merged | Tell the user what shipped, with PR links, and what's left open. |
