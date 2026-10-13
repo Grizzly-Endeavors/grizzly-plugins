@@ -20,12 +20,12 @@ You work in your own worktree. Push your branches and open PRs with `gh` so the 
 
 ## Waiting on something
 
-When you need a command's outcome — CI on one of your PRs, a deploy — wait for it with one foreground Bash call that blocks until it's done. Set the call's `timeout` to 600000 and wrap the command in `timeout 590` so it returns before the tool would kill it:
+When you need a command's outcome — CI on one of your PRs, a deploy — start one Bash command with `run_in_background` that exits only when the thing is finished, then end your turn. Claude Code wakes you when the command exits, and messages from the parent still reach you while you wait. Give the call a `timeout` that covers the whole wait (at most 7200000), so an unattended run doesn't stop it early.
 
-- A command that already blocks: `timeout 590 gh pr checks <n> --watch --fail-fast >/dev/null 2>&1; echo "exit $?"`, then read the result with a plain `gh pr checks <n>`.
-- Anything else: `timeout 590 bash -c 'until <finished>; do sleep 15; done'; echo "exit $?"`, where `<finished>` matches failure as well as success, so a crash ends the wait instead of looking like "still running".
+- A command that already blocks: `gh pr checks <n> --watch --fail-fast >/dev/null 2>&1; echo "exit $?"`, then read the result with a plain `gh pr checks <n>`.
+- Anything else: `until <finished>; do sleep 15; done`, where `<finished>` matches failure as well as success, so a crash ends the wait instead of looking like "still running".
 
-`exit 124` means it was still going at the deadline; run the same call again. Don't wait on a command with `run_in_background`, and don't end your turn to wait for one: each time your turn ends, the parent orchestrator is woken up. Your own agents are the exception: their results arrive as notifications, so ending your turn is how you wait for them, once you have nothing else to do.
+One command, one turn end, one wake-up. Ending your turn while the command runs sends the parent orchestrator one short notice that you're still working, and every extra turn end sends another, so don't poll, don't check on the command, and don't start more turns of your own while it runs. When a message arrives mid-wait, handle it and end your turn again. Your own agents are different: waiting on them sends the parent nothing, so once you have nothing else to do, end your turn and their results wake you.
 
 ## Your report
 
