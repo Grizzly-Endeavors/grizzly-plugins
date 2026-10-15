@@ -24,13 +24,13 @@ You do not need the whole picture to start. Plans are guesses; reality reshapes 
 A chunk is a unit of work with a brief, an owner, and a signal that says it is done. Chunks nest and flow into each other:
 
 - **Implementation chunk** → one implementer. One concern, a handful of files, one way to check it. Size it so a Haiku agent finishes it in one focused pass.
-- **Review chunk** → one reviewer, covering one or more related implementation chunks that land together.
+- **Review chunk** → one reviewer, covering one or more related implementation chunks that land together. When those chunks are build-heavy, one verifier builds and checks the review chunk before the reviewer reads it.
 - **PR** → one batch: a whole wave or a coherent body of work, usually several review chunks. Each review chunk is reviewed before it joins the PR branch; the PR opens when the batch is done. See "Batching PRs" for how to draw the batches.
 - **Cluster** → one sub-orchestrator. A self-contained area with its own several waves of implementation and review. Hand it off whole so its details never enter your context.
 
 **Dependencies.** Launch every chunk whose inputs already exist. Chunk B depends on chunk A only when B needs something A decides or produces — an interface, a schema, a result. Editing the same files is not a dependency: merge conflicts are cheap to resolve and expensive to plan around. When B needs A's interface, you can often settle the interface in both briefs and run them together.
 
-**Machine load.** Every implementer builds in its own worktree, so each build-heavy chunk is a separate full build on the same machine. Across the whole run, sub-orchestrators included, keep at most as many build-heavy implementers running at once as the repo's `CLAUDE.md` allows, or about one per four CPU cores (`nproc`) when it says nothing. Launch the next as one returns, and give each sub-orchestrator its share in its cluster brief. Chunks that only touch docs, config, or interpreted code run alongside freely.
+**Machine load.** A build in a fresh worktree starts cold, so on a compiled codebase the build, not the change, takes most of an implementer's time. Build once per review chunk instead: implementers on build-heavy chunks make the change and commit without building, and the review chunk's verifier is the agent that builds (see "Verification has one owner per layer"). Across the whole run, sub-orchestrators included, keep at most as many verifiers running at once as the repo's `CLAUDE.md` allows builds, or about one per four CPU cores (`nproc`) when it says nothing. Launch the next as one returns, and give each sub-orchestrator its share in its cluster brief. Implementers, and chunks that only touch docs, config, interpreted code, or scripts, run alongside freely.
 
 ## Picking the agent and model
 
@@ -38,6 +38,7 @@ A chunk is a unit of work with a brief, an owner, and a signal that says it is d
 |---|---|---|
 | Code change, fix, merge-conflict resolution | `implementer` | Haiku (default). Raise to Opus only when the chunk needs design judgment and can't be split further. |
 | Finding facts, files, and context for you or another agent | `scout` | Haiku (default) |
+| Verifying a build-heavy review chunk: building it, running lint and tests, fixing mechanical failures | `crank-turner` | Haiku (default) |
 | Judging a diff against its intent | `reviewer` | Opus (default) |
 | A cluster with its own waves | `sub-orchestrator` | Opus (default) |
 | Design doc needs a fresh-eyes check | `design-doc-reviewer` | default |
@@ -51,7 +52,7 @@ The agent has not seen this conversation. The brief is everything it knows, so i
 - **Goal** — what to change and why, in a sentence or two.
 - **Scope** — the files or areas in play, and what is deliberately out of scope.
 - **Context** — decisions already made, interfaces to honor, conventions to follow, where to look. Hand over what you already know as facts and paths; an agent that rediscovers it burns its window.
-- **Done** — what finished looks like, and which targeted checks prove it (the tests that cover the changed code, lint on the changed package, run with the repo's documented iteration commands).
+- **Done** — what finished looks like, and which checks prove it. A cheap chunk names the targeted checks the implementer runs (the tests that cover the changed code, lint on the changed package, with the repo's documented iteration commands). A build-heavy chunk says to commit without building; its verifier runs the checks.
 - **Read first** — paths to earlier reports this agent builds on: a scout's findings, the implementers' reports for a review, a review's findings for a fix, a too-big report's proposed split.
 - **Branch** — what to base on and how to commit, when it matters.
 - **Report to** — the absolute path where the agent writes its report.
@@ -69,8 +70,8 @@ Every agent writes its full report to that file and returns three things: its st
 CI is usually the slowest loop in a run, so spend it once per batch, not once per change.
 
 - **Batch by what the change triggers.** Before drawing batches, find out which paths start which CI jobs and hooks: from the repo's `CLAUDE.md` when it documents them, otherwise from a `scout` that maps them from the workflow and hook config. Put the changes that start the same expensive pipeline — dependency manifests that trigger cross-platform builds, workflow files that trigger every suite — in one PR, and keep those paths out of the other batches, so that pipeline runs once.
-- **Cheapen the loop first.** Land changes that make every later PR cheaper — hooks, CI config, build settings — in an early batch, ahead of the work that leans on the pipeline, and build later batches on it while it is still open (see "Stack instead of waiting for main").
-- **Hand off, don't wait.** When a batch's PR opens, hand it to the repo's merge path straight away: when the repo's `CLAUDE.md` says to use auto-merge or a merge queue, run `gh pr merge <n> --auto` with the merge strategy it names. Then start one wait per open PR with `run_in_background` and a `timeout` of up to 7200000, and keep working:
+- **Cheapen the loop first.** Land changes that make every later PR cheaper — hooks, CI config, build settings — in an early batch, ahead of the work that leans on the pipeline, and build later batches on it while it is still open (see "Stack instead of waiting for main"). A branch opened before a CI change merged still runs the old CI: merge `main` into it before it enters a merge queue whose required check only the new CI produces, or it never reports that check.
+- **Hand off, don't wait.** When a batch's PR opens, hand it to the repo's merge path straight away: when the repo's `CLAUDE.md` says to use auto-merge or a merge queue, run `gh pr merge <n> --auto`, adding the merge strategy flag it names; a merge queue sets its own strategy, so there `--auto` alone is enough. Then start one wait per open PR with `run_in_background` and a `timeout` of up to 7200000, and keep working:
 
   ```
   until s=$(gh pr view <n> --json state,autoMergeRequest,statusCheckRollup -q 'if .state != "OPEN" then .state elif any(.statusCheckRollup[]; (.conclusion // .state) | IN("FAILURE","ERROR","CANCELLED","TIMED_OUT","ACTION_REQUIRED","STARTUP_FAILURE")) then "FAILED" elif .autoMergeRequest == null then "LEFT_MERGE_PATH" else "" end') && [ -n "$s" ]; do sleep 60; done; echo "$s"
@@ -84,11 +85,13 @@ CI is usually the slowest loop in a run, so spend it once per batch, not once pe
 | When this happens | Do this |
 |---|---|
 | Requirements are agreed for at least one chunk | Write the briefs and launch the first wave in one message. Unknowns become scouts running alongside it. |
-| An implementer reports **done** | Merge its worktree branch into the branch for its review chunk. When the review chunk is complete, launch the reviewer with the branch, the base to diff it against (what the review chunk was branched from), the intent, and the implementers' report paths. |
+| An implementer reports **done** | Merge its worktree branch into the branch for its review chunk. When the review chunk is complete and build-heavy, launch its verifier (see "Verify worktrees"). Otherwise launch the reviewer with the branch, the base to diff it against (what the review chunk was branched from), the intent, and the implementers' report paths. |
+| A verifier reports **done** | Launch the reviewer as for a cheap review chunk, adding the verifier's report path. |
+| A verifier reports **blocked** | A failure needs a decision. Make the call, or take an architecture or design question to the user, then brief an implementer with **Branch** set to the review chunk's branch, pointing at the verifier's report. Merge its branch in the verify worktree and relaunch the verifier. |
 | An implementer reports **too big** | Turn its proposed split into new briefs, each pointing at its report, and launch them. The original agent's job is finished. |
 | An implementer reports **blocked** | Make the call and write a new brief with the answer, pointing at its report. If it is an architecture or design question, take it to the user. |
 | A merge has conflicts | Brief an implementer to resolve them, telling it what each side was for. |
-| A reviewer **approves** | Merge the review chunk into its batch's PR branch. When the batch is complete, push, open the PR, and hand it off (see "Batching PRs"); a stacked batch waits for the PR below it to merge first. |
+| A reviewer **approves** | Merge the review chunk into its batch's PR branch. When the batch is complete, push from a warm checkout (see "Verify worktrees"), open the PR, and hand it off (see "Batching PRs"); a stacked batch waits for the PR below it to merge first. |
 | A reviewer finds **must-fix** issues | Brief an implementer with the review report's path. Re-review only if the fix changed the design, not for routine fixes. |
 | CI fails (the wait prints `FAILED` or exits non-zero) | Brief an implementer with the PR number, the failing check, and **Branch** set to the PR's branch; it pulls the logs itself. Merge its branch into the PR branch and push, then start a new wait for it (see "Batching PRs"). Work stacked on that PR keeps going. |
 | A PR leaves the merge path without merging (the wait prints `LEFT_MERGE_PATH`) | Read why from the PR — failed checks or a conflict with main — and brief an implementer to fix it with **Branch** set to the PR's branch. Merge its branch into the PR branch, push, hand the PR back to the merge path, then start a new wait for it (see "Batching PRs"). |
@@ -103,21 +106,32 @@ CI is usually the slowest loop in a run, so spend it once per batch, not once pe
 
 Every check runs once, at the layer that owns it:
 
-- **Implementer** — the targeted checks for what it touched, with the repo's documented iteration commands, while iterating and once at the end. It never waits on CI unless its brief says so.
-- **Hooks** — commit hooks run on implementers' commits; pre-push hooks run on whoever pushes. When a pre-push hook is slow, run your push as a background wait like any other. A pre-push failure on your push routes to a fix brief.
-- **Reviewer** — reads the diff against the brief, before the work joins its PR branch. It reads the check results in the implementers' reports; it does not re-run them.
+- **Implementer** — on a cheap chunk (docs, config, interpreted code, scripts), the targeted checks for what it touched, with the repo's documented iteration commands, while iterating and once at the end. On a build-heavy chunk, it makes the change and commits without building; its commit hook still runs. It never waits on CI unless its brief says so.
+- **Verifier** — one per build-heavy review chunk, once its implementers' branches are merged. It builds the integrated branch once in the review chunk's verify worktree, runs lint and the tests that cover the changed code, fixes mechanical failures (lint, compile errors from moved code, unfulfilled lint expectations) and commits the fixes, and reports anything that needs a decision as **blocked**.
+- **Hooks** — commit hooks run on every commit; pre-push hooks run on whoever pushes, so push from a warm checkout. When a pre-push hook is slow, run your push as a background wait like any other. A pre-push failure on your push routes to a fix brief.
+- **Reviewer** — reads the diff against the brief, before the work joins its PR branch. It reads the check results in the verifier's report, or in the implementers' reports for a cheap review chunk; it does not re-run them.
 - **CI** — the full suite, once per batch, on the PR.
 - **You** — read the verdicts and decide. A done report, an approved review, and green CI are enough to merge.
 
-The layers are already the safety net; another full local run before or after merging adds time and no information. In a repo with no CI, the full suite moves to one place — brief a single implementer to run it once on the integrated branch before merge.
+The layers are already the safety net; another full local run before or after merging adds time and no information. In a repo with no CI, the full suite moves to one place — brief one verifier to run it once, in a verify worktree, on the integrated PR branch before merge.
 
 ## Integration
 
 Implementers run in their own git worktrees, so parallel agents never share a checkout. Each finished implementer leaves a branch. Collect them onto the branch for their review chunk, and approved review chunks onto their batch's PR branch; a clean merge is a git command and yours to run, a conflicted one is a brief. Push, PR, and merge with `gh`, following the repo's own `CLAUDE.md` on branch naming, commit style, and PR conventions.
 
+### Verify worktrees
+
+A verifier needs a persistent checkout, and `implementer` can't use one: it runs isolated, and the harness refuses its git operations anywhere but its own fresh worktree. So the verifier is a `crank-turner`, which runs without isolation, working in a verify worktree you set up:
+
+- **Create one per review chunk under verification**, at a gitignored path, starting the review chunk's branch in it: `git worktree add -b <branch> <repo>/.claude/verify-<n> <base>`. When every existing one is busy, create another, so a chunk's verification never waits for another's worktree; the "Machine load" cap is the only limit on how many run at once.
+- **Keep them between runs**, and reuse an idle one with `git switch -c <branch> <base>` in it. A build at a stable path stays warm and hits its caches next run.
+- **Prepare it before the first build.** Symlink dependency directories such as `node_modules` from the main checkout, and copy in the build outputs the build needs. `cp -r src dst` nests `src` inside `dst` when `dst` exists; copy `src/.` instead.
+- **Assemble the review chunk there.** Merge its implementers' branches in the verify worktree, then brief the verifier with the worktree path, the branch and its base, the repo's build, lint, and test commands, and the implementers' report paths.
+- **Push from a warm checkout:** a verify worktree that has built the branch, or another checkout that has. A pre-push hook that builds runs cold from a fresh agent worktree, many times slower.
+
 ## Sub-orchestrators
 
-Hand a cluster to a `sub-orchestrator` when it would take several waves on its own and its details don't need to reach you. Its brief is a cluster brief: the goal, the requirements and decisions that bind it, the boundary of its area, its share of the build-heavy implementers (see "Machine load"), what done means (usually: PRs merged, or opened and approved), and its report path. Its own agents' reports go in a directory next to that path. It runs this same playbook one level down and reports done, too big, or blocked like any other agent. There is one level of sub-orchestration: a sub-orchestrator launches implementers, reviewers, and scouts, and a cluster too big for one sub-orchestrator comes back to you to split.
+Hand a cluster to a `sub-orchestrator` when it would take several waves on its own and its details don't need to reach you. Its brief is a cluster brief: the goal, the requirements and decisions that bind it, the boundary of its area, its share of the verifiers (see "Machine load"), what done means (usually: PRs merged, or opened and approved), and its report path. Its own agents' reports go in a directory next to that path. It runs this same playbook one level down and reports done, too big, or blocked like any other agent. There is one level of sub-orchestration: a sub-orchestrator launches implementers, verifiers, reviewers, and scouts, and a cluster too big for one sub-orchestrator comes back to you to split.
 
 ## Keeping the user in the loop
 
