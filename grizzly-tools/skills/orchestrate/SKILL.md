@@ -30,7 +30,7 @@ A chunk is a unit of work with a brief, an owner, and a signal that says it is d
 
 **Dependencies.** Launch every chunk whose inputs already exist. Chunk B depends on chunk A only when B needs something A decides or produces — an interface, a schema, a result. Editing the same files is not a dependency: merge conflicts are cheap to resolve and expensive to plan around. When B needs A's interface, you can often settle the interface in both briefs and run them together.
 
-**Machine load.** Every implementer builds in its own worktree, so each build-heavy chunk is a separate full build on the same machine. Launch at most as many build-heavy implementers at once as the repo's `CLAUDE.md` allows, or about one per four CPU cores (`nproc`) when it says nothing, and stagger the rest into later waves. Chunks that only touch docs, config, or interpreted code run alongside freely.
+**Machine load.** Every implementer builds in its own worktree, so each build-heavy chunk is a separate full build on the same machine. Across the whole run, sub-orchestrators included, keep at most as many build-heavy implementers running at once as the repo's `CLAUDE.md` allows, or about one per four CPU cores (`nproc`) when it says nothing. Launch the next as one returns, and give each sub-orchestrator its share in its cluster brief. Chunks that only touch docs, config, or interpreted code run alongside freely.
 
 ## Picking the agent and model
 
@@ -68,24 +68,30 @@ Every agent writes its full report to that file and returns three things: its st
 
 CI is usually the slowest loop in a run, so spend it once per batch, not once per change.
 
-- **Batch by what the change triggers.** Before drawing batches, read the repo's CI workflows and hooks for which paths start which jobs. Put the changes that start the same expensive pipeline — dependency manifests that trigger cross-platform builds, workflow files that trigger every suite — in one PR, so that pipeline runs once.
-- **Cheapen the loop first.** Land changes that make every later PR cheaper — hooks, CI config, build settings — in an early batch, ahead of the work that leans on the pipeline, and stack later batches on it while it is still open.
-- **Hand off, don't wait.** When a batch's PR opens, hand it to the repo's merge path straight away: auto-merge or the merge queue when the repo's `CLAUDE.md` says to use them (`gh pr merge --auto ...`). Then start one background wait per open PR that exits when it merges, a check fails, or it leaves the queue (`gh pr view <n> --json state,autoMergeRequest,statusCheckRollup` shows all three), and keep working. Otherwise the wait is `gh pr checks <n> --watch --fail-fast`, and you merge when it comes back green.
-- **Stack instead of waiting for main.** Work that depends on an open PR bases its branch on that PR's branch.
+- **Batch by what the change triggers.** Before drawing batches, find out which paths start which CI jobs and hooks: from the repo's `CLAUDE.md` when it documents them, otherwise from a `scout` that maps them from the workflow and hook config. Put the changes that start the same expensive pipeline — dependency manifests that trigger cross-platform builds, workflow files that trigger every suite — in one PR, and keep those paths out of the other batches, so that pipeline runs once.
+- **Cheapen the loop first.** Land changes that make every later PR cheaper — hooks, CI config, build settings — in an early batch, ahead of the work that leans on the pipeline, and build later batches on it while it is still open (see "Stack instead of waiting for main").
+- **Hand off, don't wait.** When a batch's PR opens, hand it to the repo's merge path straight away: when the repo's `CLAUDE.md` says to use auto-merge or a merge queue, run `gh pr merge <n> --auto` with the merge strategy it names. Then start one wait per open PR with `run_in_background` and a `timeout` of up to 7200000, and keep working:
+
+  ```
+  until s=$(gh pr view <n> --json state,autoMergeRequest,statusCheckRollup -q 'if .state != "OPEN" then .state elif any(.statusCheckRollup[]; (.conclusion // .state) | IN("FAILURE","ERROR","CANCELLED","TIMED_OUT","ACTION_REQUIRED","STARTUP_FAILURE")) then "FAILED" elif .autoMergeRequest == null then "LEFT_MERGE_PATH" else "" end') && [ -n "$s" ]; do sleep 60; done; echo "$s"
+  ```
+
+  It prints `MERGED`, `CLOSED`, `FAILED` (a check failed), or `LEFT_MERGE_PATH` (auto-merge was cleared while the PR is still open, as when the queue ejects it). Without auto-merge or a queue, the wait is `gh pr checks <n> --watch --fail-fast >/dev/null 2>&1; echo "exit $?"`, and you merge when it exits 0.
+- **Stack instead of waiting for main.** Work that depends on an open PR builds on that PR's branch, and its batch is assembled there while the PR below is in flight. Open the stacked PR, or hand it to the merge path, only after the PR below has merged (its wait prints `MERGED`, or you merged it yourself): then update its branch onto `main` (when the repo squash-merges, `git rebase --onto main <the branch below>`, so the lower PR's original commits drop out), open it against `main`, and hand it off.
 
 ## Playbook
 
 | When this happens | Do this |
 |---|---|
 | Requirements are agreed for at least one chunk | Write the briefs and launch the first wave in one message. Unknowns become scouts running alongside it. |
-| An implementer reports **done** | Merge its worktree branch into the branch for its review chunk. When the review chunk is complete, launch the reviewer with the branch, the intent, and the implementers' report paths. |
+| An implementer reports **done** | Merge its worktree branch into the branch for its review chunk. When the review chunk is complete, launch the reviewer with the branch, the base to diff it against (what the review chunk was branched from), the intent, and the implementers' report paths. |
 | An implementer reports **too big** | Turn its proposed split into new briefs, each pointing at its report, and launch them. The original agent's job is finished. |
 | An implementer reports **blocked** | Make the call and write a new brief with the answer, pointing at its report. If it is an architecture or design question, take it to the user. |
 | A merge has conflicts | Brief an implementer to resolve them, telling it what each side was for. |
-| A reviewer **approves** | Merge the review chunk into its batch's PR branch. When the batch is complete, push, open the PR, and hand it off (see "Batching PRs"). |
+| A reviewer **approves** | Merge the review chunk into its batch's PR branch. When the batch is complete, push, open the PR, and hand it off (see "Batching PRs"); a stacked batch waits for the PR below it to merge first. |
 | A reviewer finds **must-fix** issues | Brief an implementer with the review report's path. Re-review only if the fix changed the design, not for routine fixes. |
-| CI fails | Brief an implementer with the PR number, its branch, and the failing check; it pulls the logs itself and commits the fix for you to push to the PR branch. Work stacked on that PR keeps going. |
-| A PR leaves the merge queue without merging | Read why from the PR — failed checks or a conflict with main — brief an implementer to fix it, then push and hand it back to the queue. |
+| CI fails (the wait prints `FAILED` or exits non-zero) | Brief an implementer with the PR number, the failing check, and **Branch** set to the PR's branch; it pulls the logs itself. Merge its branch into the PR branch and push, then start a new wait for it (see "Batching PRs"). Work stacked on that PR keeps going. |
+| A PR leaves the merge path without merging (the wait prints `LEFT_MERGE_PATH`) | Read why from the PR — failed checks or a conflict with main — and brief an implementer to fix it with **Branch** set to the PR's branch. Merge its branch into the PR branch, push, hand the PR back to the merge path, then start a new wait for it (see "Batching PRs"). |
 | CI is green and the review approved | Auto-merge or the queue merges it; without either, merge it yourself. That is the whole verification step. |
 | A report mentions a gap outside its scope | Brief an agent for it if it's in reach, otherwise open an `investigate` issue. |
 | A notification says an agent stopped with background work still running | Nothing. It is waiting on its own command and will report when that finishes. |
@@ -111,7 +117,7 @@ Implementers run in their own git worktrees, so parallel agents never share a ch
 
 ## Sub-orchestrators
 
-Hand a cluster to a `sub-orchestrator` when it would take several waves on its own and its details don't need to reach you. Its brief is a cluster brief: the goal, the requirements and decisions that bind it, the boundary of its area, what done means (usually: PRs merged, or opened and approved), and its report path. Its own agents' reports go in a directory next to that path. It runs this same playbook one level down and reports done, too big, or blocked like any other agent. There is one level of sub-orchestration: a sub-orchestrator launches implementers, reviewers, and scouts, and a cluster too big for one sub-orchestrator comes back to you to split.
+Hand a cluster to a `sub-orchestrator` when it would take several waves on its own and its details don't need to reach you. Its brief is a cluster brief: the goal, the requirements and decisions that bind it, the boundary of its area, its share of the build-heavy implementers (see "Machine load"), what done means (usually: PRs merged, or opened and approved), and its report path. Its own agents' reports go in a directory next to that path. It runs this same playbook one level down and reports done, too big, or blocked like any other agent. There is one level of sub-orchestration: a sub-orchestrator launches implementers, reviewers, and scouts, and a cluster too big for one sub-orchestrator comes back to you to split.
 
 ## Keeping the user in the loop
 
