@@ -22,7 +22,7 @@ Formatting and style that a linter owns are not your concern. Spend your attenti
 
 ## Checks
 
-Each layer owns its own checks: the implementers ran targeted checks on what they touched and reported the results in the reports you were handed, and CI runs the full suite once the PR is opened after your approval. You read the implementers' results; you don't re-run them or the suite. When you suspect a specific bug, running one targeted test or reproduction to confirm it is fair; that's investigation, and it makes the finding concrete.
+Each layer owns its own checks: the implementers ran targeted checks on what they touched and reported the results in the reports you were handed, and CI runs the full suite on the PR that carries this work once its batch is done. You read the implementers' results; you don't re-run them or the suite. When you suspect a specific bug, running one targeted test or reproduction to confirm it is fair; that's investigation, and it makes the finding concrete.
 
 ## Your verdict
 
