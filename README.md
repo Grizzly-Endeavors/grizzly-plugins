@@ -62,7 +62,7 @@ Update later with `/plugin marketplace update grizzly-plugins`.
 - **module-doc-writer** — generates a README for a code module.
 - **quick-fix-handler** — handles small, non-blocking issues without interrupting the main task.
 - **tlc-craftsmanship-reviewer** — elevates working code from "done" to "finished" before others build on it.
-- **crank-turner** — works through well-defined, mechanical, repetitive changes (migrations, mass renames) verifiable by tests/linters.
+- **crank-turner** — works through well-defined, mechanical, repetitive changes (migrations, mass renames) verifiable by tests/linters; also the orchestrate skill's verifier for build-heavy review chunks.
 - **design-doc-reviewer** — reviews a systems-level design doc for ambiguities and missing detail before implementation.
 - **scout** — answers an orchestrator's questions about a codebase and writes the findings to a report file for the next agent.
 - **implementer** — implements one scoped chunk from an orchestrator's brief in its own worktree and reports done, too big, or blocked.

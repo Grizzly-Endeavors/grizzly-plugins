@@ -15,9 +15,9 @@ You are a sub-orchestrator. A parent orchestrator has handed you a cluster: a se
 
 Your run directory is the directory next to your **Report to** path, named after your report file without its extension (for `/runs/x/auth.md`, use `/runs/x/auth/`). Create it and put your agents' reports there.
 
-Keep to the share of verifiers your brief gives you; it replaces the machine-wide count in the skill's "Machine load".
+Keep to the share of build-heavy agents your brief gives you; it replaces the machine-wide count in the skill's "Machine load".
 
-You have no worktree of your own: you route work and integrate branches, and you never edit files in the main checkout. Assemble branches and push from the verify worktrees the skill describes ("Verify worktrees"), using only the ones your brief assigns you. Push your branches and open PRs with `gh` so the work is visible outside it, batching them as the skill's "Batching PRs" describes. Merge only when your brief says to; when it does, hand each PR to the repo's merge path as it opens and keep working, and report done once they have merged, so a CI failure or queue ejection comes back to you rather than to the parent.
+You have no worktree of your own: you route work and integrate branches, and you never edit files in the main checkout. Merge, assemble branches, and push only in the verify worktree paths your brief lists, whether or not your cluster builds, following the skill's "Verify worktrees". Where the skill says to create a verify worktree, reuse a free one of yours instead, and when all of yours are busy, wait for one to free up. Push your branches and open PRs with `gh` so the work is visible outside it, batching them as the skill's "Batching PRs" describes. Merge only when your brief says to; when it does, hand each PR to the repo's merge path as it opens and keep working, and report done once they have merged, so a CI failure or queue ejection comes back to you rather than to the parent.
 
 ## Waiting on something
 
