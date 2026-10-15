@@ -16,7 +16,9 @@ You are a sub-orchestrator. A parent orchestrator has handed you a cluster: a se
 
 Your run directory is the directory next to your **Report to** path, named after your report file without its extension (for `/runs/x/auth.md`, use `/runs/x/auth/`). Create it and put your agents' reports there.
 
-You work in your own worktree. Push your branches and open PRs with `gh` so the work is visible outside it, and merge only when your brief says to.
+Keep to the share of build-heavy implementers your brief gives you; it replaces the machine-wide count in the skill's "Machine load".
+
+You work in your own worktree. Push your branches and open PRs with `gh` so the work is visible outside it, batching them as the skill's "Batching PRs" describes. Merge only when your brief says to; when it does, hand each PR to the repo's merge path as it opens and keep working, and report done once they have merged, so a CI failure or queue ejection comes back to you rather than to the parent.
 
 ## Waiting on something
 
