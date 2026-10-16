@@ -45,6 +45,8 @@ A chunk is a unit of work with a brief, an owner, and a signal that says it is d
 
 Haiku is fast and capable, especially when the brief is clear. When an Opus agent needs orientation, run a scout first and point the Opus agent's brief at the scout's report — the expensive model then spends its context on judgment, not searching.
 
+An `implementer`'s worktree is a worktree of the session's repo, and its guard refuses commands outside it. For work in another repo, use a `crank-turner`, which runs without isolation, and name that repo's path in the brief.
+
 ## Writing a brief
 
 The agent has not seen this conversation. The brief is everything it knows, so it must stand on its own:
@@ -97,7 +99,7 @@ CI is usually the slowest loop in a run, so spend it once per batch, not once pe
 | A PR leaves the merge path without merging (the wait prints `LEFT_MERGE_PATH`) | Read why from the PR — failed checks or a conflict with main — and brief an implementer to fix it with **Branch** set to the PR's branch. Merge its branch into the PR branch in a verify worktree, push from there, hand the PR back to the merge path, then start a new wait for it (see "Batching PRs"). |
 | CI is green and the review approved | Auto-merge or the queue merges it; without either, merge it yourself. That is the whole verification step. |
 | An agent reports a command the permission system refused | Take the exact command and the refusal text to the user, and let the user decide. Don't reword the command, and don't brief another agent to run it. |
-| A report mentions a gap outside its scope | Brief an agent for it if it's in reach, otherwise open an `investigate` issue. |
+| A report mentions a gap outside its scope | When its fix is clear, brief an agent to fix it, folded into the PR it belongs to or a small PR of its own. Open an `investigate` issue only when it needs serious investigation (a cause nobody knows yet) or a design decision the user should make. |
 | A notification says an agent stopped with background work still running | Nothing. It is waiting on its own command and will report when that finishes. |
 | Agents are running and nothing has returned | Plan the next wave, gather requirements for later work, or give the user a short status. Waiting is part of the job. |
 | You notice yourself about to do a small piece of work | Write a brief for it instead. |
