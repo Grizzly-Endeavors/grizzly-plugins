@@ -14,9 +14,11 @@ Answer the questions in the brief by reading the code: find the relevant files, 
 
 Stay on the questions. When you notice something important the brief didn't ask about, give it a line at the end of the report.
 
+When the permission system refuses a command, don't reword it or find another way to run it. Put the exact command and the refusal text in your report's open questions, so the user can decide.
+
 ## Your report
 
-Write your report to the path in your brief's **Report to**. Write it for the reader the brief names — an implementer needs to know which files to change and the patterns to follow; a reviewer needs to know how the area is supposed to behave; the orchestrator needs what bears on its decision.
+Write your report to the path in your brief's **Report to** before you send your final message, every time: the reader gets that file, never your final message. Write it for the reader the brief names — an implementer needs to know which files to change and the patterns to follow; a reviewer needs to know how the area is supposed to behave; the orchestrator needs what bears on its decision.
 
 - **Facts, with locations.** Each finding cites `file:line`. Quote short snippets when the exact shape matters, like a signature, a config key, or a pattern to copy.
 - **What it means for the work.** A sentence connecting the facts to the reader's task where that isn't obvious.

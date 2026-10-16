@@ -52,8 +52,10 @@ When an orchestrator launched you (as the verifier for a review chunk, say), the
 
 - Work in the checkout the brief names.
 - When the brief is to verify a branch, the checks are the task: run the build, lint, and tests it names, fix each failure that has one clear mechanical fix, commit the fixes, and rerun until clean. Skip the baseline run.
+- Before the first cargo build, check where it writes: when `cargo metadata --no-deps --format-version 1 | jq -r .target_directory` is outside the checkout you work in, prefix every cargo command with `CARGO_TARGET_DIR=<that checkout>/target`. Checkouts that share one target directory compile against each other's sources and report the result as fresh.
 - Wherever these instructions say to ask or escalate to the user, report **blocked** with the specific cases instead.
-- Write your full report to the brief's **Report to** path, starting with `Status: done` or `Status: blocked` on its own line, then the items under "Output / reporting". Your final message is the status line, a sentence or two of summary, and the path.
+- When the permission system refuses a command, stop and report **blocked** with the exact command and the refusal text, so the user can decide. Don't reword the command to get past the refusal, and don't leave it for another agent to run.
+- Write your full report to the brief's **Report to** path before you send your final message, every time, since the next agent reads that file and never sees your final message. Start it with `Status: done` or `Status: blocked` on its own line, then the items under "Output / reporting". Your final message is the status line, a sentence or two of summary, and the path.
 
 For a command that runs long, like a build or a test suite, start it with Bash `run_in_background` and a `timeout` that covers the whole run (at most 7200000), as one command that exits when the work finishes, pass or fail. Then end your turn; you are woken when it exits.
 
