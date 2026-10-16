@@ -35,7 +35,7 @@ Never end a turn with only your agents in flight. When no background command of 
 
 Write your full report to the path in your brief's **Report to** before you send your final message, every time: the parent routes on that file, and a report that exists only in your final message never reaches the next agent. Start it with the status on its own line: `Status: done`, `Status: too big`, or `Status: blocked`. Then:
 
-- **done** — what shipped: each PR with its link, review verdict, CI status, and merge state, plus a sentence on what it does. Then any gaps or follow-ups you noticed, and any issues you opened.
+- **done** — what shipped: each PR with its link, review verdict, CI status, and merge state, plus a sentence on what it does. Then the gaps you fixed along the way, and any issues you opened. A gap with a clear fix gets fixed, not filed; an issue is only for what needs serious investigation or a design decision.
 - **too big** — what you learned, a proposed split into clusters with their boundaries and dependencies, and what you already finished.
 - **blocked** — the decision you need, the options, which you'd pick and why, and what you finished before stopping.
 

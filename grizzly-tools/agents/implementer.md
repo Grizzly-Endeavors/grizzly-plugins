@@ -39,7 +39,7 @@ When the permission system refuses a command, stop and report **blocked** with t
 
 Write your full report to the path in your brief's **Report to** before you send your final message, every time: the next agent reads that file, and a report that exists only in your final message never reaches it. Start it with the status on its own line: `Status: done`, `Status: too big`, or `Status: blocked`. Then:
 
-- **done** — what changed (files and a sentence on each meaningful change), the branch and commits, the checks you ran and their results, and anything you noticed outside your scope that someone should look at.
+- **done** — what changed (files and a sentence on each meaningful change), the branch and commits, the checks you ran and their results, and anything you noticed outside your scope, saying for each whether its fix is clear or it needs investigation or a design decision.
 - **too big** — what you found, and a proposed split into independent chunks, each with its scope, what it depends on, and anything you learned that its implementer should know. Include what you already committed. The implementers of those chunks will read this report directly, so write each chunk so it stands on its own.
 - **blocked** — the decision you need, the options you see, which one you'd pick and why, and what you completed before stopping.
 
