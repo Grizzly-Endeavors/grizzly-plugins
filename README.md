@@ -48,6 +48,7 @@ Update later with `/plugin marketplace update grizzly-plugins`.
 
 **Planning & process**
 
+- **issue-triage** — triages GitHub issues skeptically: verifies their claims against the code and docs, pulls out the need behind non-bug issues, and brings the user only the decisions the codebase can't settle.
 - **orchestrate** — run a body of work as an orchestrator: gather requirements, chunk the work, and drive scout, implementer, reviewer, and sub-orchestrator agents through to merged PRs.
 - **workbench** — build an interactive diagram or browser tool as a self-contained HTML bundle in the personal workbench server.
 - **adr** — create or update Architectural Decision Records that capture the *why* behind non-obvious decisions.
