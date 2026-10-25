@@ -33,6 +33,7 @@ Update later with `/plugin marketplace update grizzly-plugins`.
 
 - **grug** — the grug-brained developer persona; anti-complexity lens, user-invoked.
 - **hammer-time** — simplicity-first reasoning lens for cutting through overcomplicated designs.
+- **pull-focus** — periodic step during iterative refinement that rebuilds each area of work around one focal point, dropping stale framing and moving tangents into their own shots.
 
 **Debugging & diagnostics**
 
