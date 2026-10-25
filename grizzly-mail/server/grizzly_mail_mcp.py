@@ -11,7 +11,9 @@ and always closed: the server lives for a whole Claude session, and both
 Stalwart and the fronting HAProxy drop idle sockets, so a persistent
 connection would need stale-socket recovery in every tool for no real gain.
 
-Auth discipline: exactly one login attempt per tool call, never a retry loop.
+Auth discipline: one login attempt per connection, never a retry loop. The
+only call that opens two (send_mail: SMTP, then IMAP to file the Sent copy)
+opens the second only after the first authenticated.
 The desktop's traffic hairpins via the VPS, so Stalwart sees the home public
 IP — outside the 10.0.0.0/8 ban allowlist — and repeated failed logins would
 IP-ban the whole household's mail access.
@@ -42,9 +44,10 @@ SMTP_PORT = int(os.environ["GRIZZLY_MAIL_SMTP_PORT"])
 IMAP_PORT = int(os.environ["GRIZZLY_MAIL_IMAP_PORT"])
 DOMAIN = USER.rsplit("@", 1)[1]
 
-SERVER_INFO = {"name": "grizzly-mail", "version": "0.2.0"}
+SERVER_INFO = {"name": "grizzly-mail", "version": "0.3.0"}
 FALLBACK_PROTOCOL = "2024-11-05"
 JUNK_FOLDER = "Junk Mail"
+SENT_FOLDER = "Sent Items"
 
 # Outbound attachments are capped well under the relay's own ceiling so an
 # oversized send fails here, instantly and legibly, instead of after a slow
@@ -319,7 +322,34 @@ def tool_send_mail(args):
         smtp.send_message(msg)
     note = f" with {len(attached)} attachment(s): {', '.join(attached)}" \
         if attached else ""
-    return f"sent {msg['Message-ID']} to {to}{note}"
+    return f"sent {msg['Message-ID']} to {to}{note}{save_sent_copy(msg)}"
+
+
+def save_sent_copy(msg):
+    """File a copy of a sent message in Sent Items; return a status suffix.
+
+    SMTP submission doesn't store anything, so without this the operator
+    (who reads this mailbox through a shared folder) never sees outbound
+    mail. The message has already gone out by now, so a failure here is
+    reported alongside the success rather than raised — raising would read
+    as a failed send and invite a duplicate resend.
+    """
+    try:
+        conn = imap_connect()
+    except Exception as exc:
+        return f" (but saving a copy to {SENT_FOLDER} failed: {exc})"
+    try:
+        typ, data = conn.append(f'"{SENT_FOLDER}"', r"(\Seen)",
+                                imaplib.Time2Internaldate(time.time()),
+                                msg.as_bytes(policy=email.policy.SMTP))
+        if typ != "OK":
+            detail = (data[0] or b"").decode(errors="replace")
+            return f" (but saving a copy to {SENT_FOLDER} failed: {detail})"
+    except Exception as exc:
+        return f" (but saving a copy to {SENT_FOLDER} failed: {exc})"
+    finally:
+        imap_close(conn)
+    return f"; copy saved to {SENT_FOLDER}"
 
 
 def attach_files(msg, paths):
@@ -512,7 +542,8 @@ TOOLS = [
         "name": "send_mail",
         "description": (
             f"Send a plain-text email as {USER}. The From address is fixed "
-            "(DMARC alignment). Returns the Message-ID. Delivery to any "
+            "(DMARC alignment). Returns the Message-ID; a copy is filed in "
+            f"{SENT_FOLDER}. Delivery to any "
             "mailbox on the platform (including this one) takes ~1-2 minutes "
             "— pair with wait_for_message for a round-trip check."
         ),
