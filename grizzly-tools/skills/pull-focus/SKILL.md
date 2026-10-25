@@ -49,7 +49,7 @@ Sort every passage in those shots into one bucket:
 Present the map before changing anything:
 
 ```
-**<shot>**: <focal point>
+**<shot>** (rewrite | edit only): <focal point>
   moving in: <content> (from <shot>)
   moving out: <content> → <shot>
   dropping: <superseded framing>
@@ -58,11 +58,11 @@ Present the map before changing anything:
   ...
 ```
 
-Leave out shots with nothing moving, dropping, or restructuring, and list them by name on one line. Wait for the user to confirm or adjust. Re-present only if their adjustments change the shot list itself.
+A shot is changed if it has any map entry or this session revised it. Mark each changed shot **rewrite**, except a shot this session never revised whose only entry is content moving out: mark that one **edit only**. List unchanged shots by name on one line. Wait for the user to confirm or adjust. Re-present only if their adjustments change the shot list itself.
 
-### 4. Rewrite from each focal point
+### 4. Rewrite each changed shot from its focal point
 
-In each changed shot, write fresh every part this session revised or the map changes, starting from the focal point and its in-focus and incoming content. Do not edit those parts in place. Editing keeps the earlier draft's structure, and that structure is where stale framing hides. Keep pre-session parts the map doesn't touch as they are. Create new shots in the same form as the existing work (a new document, file, or module). Leave shots with no changes untouched.
+Rewrite each shot marked rewrite fresh and whole: start from its focal point and write it from what its in-focus content (pre-session passages included) and incoming content say, not from their wording or position. Do not edit in place. Editing keeps the earlier draft's structure, and that structure is where stale framing hides. In a shot marked edit only, remove the outgoing content and touch nothing else. Create new shots in the same form as the existing work (a new document, file, or module). Leave shots with no changes untouched.
 
 Delete out-of-focus content outright and leave no notes about what changed. Where a reader of the source shot needs to find moved content, leave a plain pointer to the destination. In code, update imports, call sites, and references.
 
@@ -71,10 +71,10 @@ Delete out-of-focus content outright and leave no notes about what changed. Wher
 Check each item and fix what fails before handing back:
 
 - For each rewritten shot, state its focal point, then re-read it and confirm every passage serves that point.
-- Search all shots for the superseded terms from step 1. Each hit is residue: rewrite or delete it. Rewrite the passage around a hit fresh; if the framing runs through a shot step 4 left untouched, tell the user and offer to rewrite that shot.
+- Search all shots for the superseded terms from step 1. Each hit is residue: rewrite or delete it. In a rewritten shot, rewrite the passage around a hit. A hit in a shot step 4 didn't rewrite means that shot needs rewriting too: tell the user, and rewrite it once they confirm.
 - Search the rewritten shots for change notes and reconciling text ("Note:", "Update:", "previously", "now", "actually", "instead of"). Remove any that narrate the revision history.
 - Confirm each moved item exists in its destination and appears in its source only as a pointer, if at all.
-- Confirm each in-focus passage from the step 2 sort survived the rewrite.
+- Confirm what each in-focus passage from the step 2 sort says survived the rewrite.
 - For code, build and run the tests. Behavior changes only where the user asked for them. If there is no build or tests, say so in the hand-back.
 
 ### 6. Hand back
