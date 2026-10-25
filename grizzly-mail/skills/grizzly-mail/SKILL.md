@@ -22,7 +22,8 @@ Files are saved **exactly as they arrived**. A `.zip` or `.gz` stays packed, so 
 ## Rules
 
 - **Auth failure means STOP.** If any tool reports authentication failed, do not call another mail tool and do not retry — tell Bear the 1Password `platform-stalwart/claude_password` may have drifted from Stalwart. Repeated failed logins IP-ban this machine's *public* IP on the server (the traffic hairpins via the VPS, so the LAN allowlist does not protect you), which takes down mail access for the whole household.
-- **Clean up after yourself.** Test messages get `delete_message`d once the check is done — in this mailbox, and (by asking Bear) anywhere you sent them.
+- **Clean up after yourself.** Test messages get `delete_message`d once the check is done — in this mailbox (`send_mail` also files a copy in `Sent Items`; delete that with `folder: "Sent Items"`), and (by asking Bear) anywhere you sent them.
+- **Bear can read this mailbox.** Its Inbox and Sent Items are shared read-only into Bear's own webmail, so write mail as if a human will read it.
 - **Don't spam real mailboxes.** One test message to `bearflinn@` when a human-visible check is genuinely needed; everything else round-trips through your own inbox.
 - **`From:` is fixed** at `claude@grizzly-endeavors.com` by the server — DMARC alignment is anchored on the domain. Don't try to work around it.
 - **Check the junk folder** when something seems undelivered — Stalwart's spam filter files some legit mail under `Junk Mail`. `wait_for_message` already looks there for you.
