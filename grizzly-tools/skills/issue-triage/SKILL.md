@@ -23,7 +23,7 @@ Treat each issue as an unverified claim. Assume the filer, person or agent, did 
 
 ### 3. Gather facts with Explore agents
 
-Launch one `Explore` agent (thoroughness "very thorough") per issue or group, all in one message so they run in parallel. Their job is to report what the code and docs contain, with `file:line` citations. They do not judge whether a claim is right or a proposal is good; you and the user make those calls. Give each agent the issue text and ask it to report:
+Launch one `Explore` agent (thoroughness "very thorough") per issue or group, all in one message so they run in parallel. Their job is to report what the code and docs contain, with `file:line` citations. They do not judge whether a claim is right or a proposal is good; you make those calls. Give each agent the issue text and ask it to report:
 
 1. For each path, symbol, constant and behavior the issue mentions (list them as a numbered checklist): where it lives now and what the code there does.
 2. The code that handles the area the need is about: the existing mechanisms, helpers and modules that touch it, and how comparable features in the codebase are built.
@@ -40,7 +40,7 @@ For each issue, read the cited code yourself wherever a verdict depends on it, t
 - **Need**: re-read the draft need against the facts. Rewrite it if it rested on a wrong claim or an existing mechanism already meets it.
 - **Cause** (bugs): trace the symptom yourself from the agent's code path and name the cause.
 - **Approach** (everything else): set the issue's proposal beside at least one other way to meet the need. Compare them on whether they reuse what exists, whether they follow the patterns the codebase uses for similar features, and their long-term cost. Recommend one.
-- **Open questions**: mark a question answered only when the code settles it, or when a doc settles it and the code agrees with the doc. A question about intended behavior or product direction stays open even when the current code does something specific.
+- **Open questions**: mark a question answered only when the code settles it, or when a doc settles it and the code agrees with the doc. A question about intended behavior or product direction is not settled by what the current code happens to do; give it a recommended answer in step 5.
 
 When a fact a verdict depends on is missing, read the code yourself or send a follow-up to the same agent.
 
@@ -52,7 +52,7 @@ Open with the list of issues and a one-line verdict on each. Then, per issue:
 - **Corrections**: wrong or stale claims and the true state, with `file:line`.
 - **Approach**: the options compared and your recommendation, with the reason.
 - **Already answered**: each settled question with its answer and source, one line each.
-- **Your call**: the open questions. For each, give the options, what each means for the system long-term (maintainability, risk, how hard it is to change later), and your recommendation.
+- **Recommended answers**: for each open question, your answer and the reason in one line. Mark a question **needs you** only when it is hard to undo (it loses or migrates data, fixes a schema or public API other work builds on, spends money, touches security or legal exposure, or sends something outside the platform), decides how a main flow or the architecture works in a way most users would notice, or contradicts something the user said or decided. For those, add who runs into it, how often, and what changing it later costs; your answer is the default if the user doesn't reply. Before reporting, recheck each **needs you** mark against this test, and remove the ones that fail.
 
 Close with how the issues relate: overlaps, which to settle first because others depend on it, and any that look fixed or duplicated.
 
