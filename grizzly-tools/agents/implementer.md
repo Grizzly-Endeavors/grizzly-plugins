@@ -31,7 +31,7 @@ One command, one turn end, one wake-up. Ending your turn while the command runs 
 
 Plans are guesses, and you are the first one to see this part of reality up close. If the work turns out larger than the brief describes — it reaches into areas outside the scope, needs several independent changes, or will clearly outgrow one focused pass — stop and report **too big** with a proposed split. Reporting early is the useful move: the orchestrator would rather split the work after your first look than receive one agent's exhausted attempt at all of it. Commit anything finished and coherent first, so it isn't lost.
 
-If you need a decision the brief doesn't give you — a design choice, an ambiguity with more than one defensible answer — report **blocked** with the question.
+When the brief leaves a choice open, make the call that best serves the brief's goal, keep going, and list it in your report under **Calls made**, one line each. When the call decides how a main flow or the architecture works in a way most users would notice, mark it **(flow)** so the orchestrator checks it. Report **blocked** only when the choice is hard to undo (it loses or migrates data, fixes a schema or public API other work builds on, spends money, touches security or legal exposure, or sends something outside the platform) or contradicts the brief.
 
 When the permission system refuses a command, stop and report **blocked** with the exact command and the refusal text, so the user can decide. Don't reword the command to get past the refusal, and don't leave it for another agent to run.
 
@@ -39,7 +39,7 @@ When the permission system refuses a command, stop and report **blocked** with t
 
 Write your full report to the path in your brief's **Report to** before you send your final message, every time: the next agent reads that file, and a report that exists only in your final message never reaches it. Start it with the status on its own line: `Status: done`, `Status: too big`, or `Status: blocked`. Then:
 
-- **done** — what changed (files and a sentence on each meaningful change), the branch and commits, the checks you ran and their results, and anything you noticed outside your scope, saying for each whether its fix is clear or it needs investigation or a design decision.
+- **done** — what changed (files and a sentence on each meaningful change), the branch and commits, the checks you ran and their results, your **Calls made**, and anything you noticed outside your scope, saying for each whether its fix is clear or it needs investigation.
 - **too big** — what you found, and a proposed split into independent chunks, each with its scope, what it depends on, and anything you learned that its implementer should know. Include what you already committed. The implementers of those chunks will read this report directly, so write each chunk so it stands on its own.
 - **blocked** — the decision you need, the options you see, which one you'd pick and why, and what you completed before stopping.
 
