@@ -59,4 +59,4 @@ If the module has both, run each workflow on the relevant subset. Start with whi
 - Not a test coverage tool. Line coverage percentage is not the metric.
 - Not a style guide. Test naming conventions and file organization are out of scope.
 - Not a performance audit. Slow tests aren't inherently bad signal.
-- Not for flaky tests caused by timing/concurrency. Those are infrastructure problems, not signal problems.
+- Not for flaky tests caused by timing or concurrency: use test-reliability.
