@@ -3,13 +3,12 @@ name: test-reliability
 description: >
   Use when writing or fixing any test (unit, integration, end-to-end); when a
   test is flaky, times out, or fails only sometimes or under load; when a gate
-  or CI run fails on code the change didn't touch; when adding or changing a
-  git hook, a pre-push or CI gate, a gate's scan step, or a test runner's
-  timeouts, retries or workers; and before writing `sleep`, `waitForTimeout`,
-  `setTimeout`, `test.slow()`, a `timeout:` option, a retry or a longer
-  deadline in test code. Makes tests wait on events instead of elapsed time,
-  proves them under load, and scopes checks with every failure reported. For
-  tests that break on harmless refactors, use test-audit.
+  or CI run fails on code the change didn't touch; when creating or changing a
+  test runner's timeouts, retries or workers; and before writing `sleep`,
+  `waitForTimeout`, `setTimeout`, `test.slow()`, a `timeout:` option, a retry
+  or a longer deadline in test code. For tests that break on harmless
+  refactors, use test-audit. For deciding which checks run where and when
+  (hooks, gates, CI stages), use lean-ci.
 ---
 
 # Test Reliability
@@ -51,17 +50,7 @@ Make every wait end on the event it waits for. A longer guess only moves the fai
 3. **Prove the fix** with the same stress run, all repeats passing, and say in the commit what the test now waits on.
 4. **A failure in code your change didn't touch is still yours:** fix it, or file an `investigate` issue with the full output.
 
-## Adding or changing a check (hook, gate, CI job, scan)
+## Test runner settings and wait scans
 
-- **Run what the change can affect.** Map changed paths to the checks of the projects they belong to and of the projects that import them. Send a path the mapping doesn't know to every check, so a selection checks more, never less. Keep the full run available as one command, and give the mapping its own test cases.
-- **Report every failure at once.** Run each check to the end even after one fails, then print a summary of each check's result.
-- **Judge the code being shipped.** A pre-push gate that runs on the working tree refuses when the pushed commit isn't HEAD or tracked files have uncommitted changes. To check another commit, check it out in a temporary `git worktree` and run the checks there.
-- **Run builds and tests in hooks without git's hook variables**: `unset $(git rev-parse --local-env-vars)` at the top of the hook. In a linked worktree they change what nested git calls see.
-- **Install hooks as dispatchers.** The hooks directory is shared by every worktree, so install a small script that runs `$(git rev-parse --show-toplevel)/<the project's hook source dir>/<hook>` (`.githooks/` in goalaxi and residuum), not a symlink to one checkout's copy.
-- **Keep performance budgets (an assert that elapsed time stays under N) out of gates that run on a shared machine** unless the measurement is load-independent. Report the number without a threshold, or measure it in a run of its own.
 - **When creating a runner config, size it for a shared machine:** cap workers (one per two CPUs, at most six), set retries to 0, and set each timeout as a hang guard at least 10x the slowest passing run under the stress recipe. Leave an existing config's timeouts as they are (step 3).
-- **When you remove a pattern agents keep reintroducing** (sleeps in tests, raised timeouts), add a scan or lint rule that fails on it, exempting the project's own hang guards. Run it in the gate and the pre-commit hook, and give it test cases.
-- **Prove a new or changed check before relying on it.**
-  - Run it from a linked worktree and confirm that a nested `git log` shows that worktree's history.
-  - Make one check fail on purpose and confirm the others still run and the summary names the failure.
-  - Touch a path the mapping doesn't know and confirm every check runs.
+- **When you remove a pattern agents keep reintroducing** (sleeps in tests, raised timeouts), add a scan or lint rule that fails on it, exempting the project's own hang guards. Run it in pre-commit on staged test files, and give it test cases.
