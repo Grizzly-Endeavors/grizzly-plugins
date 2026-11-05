@@ -33,6 +33,7 @@ Update later with `/plugin marketplace update grizzly-plugins`.
 
 - **grug** — the grug-brained developer persona; anti-complexity lens, user-invoked.
 - **hammer-time** — simplicity-first reasoning lens for cutting through overcomplicated designs.
+- **clean-sheet** — planning lens that plans what should exist rather than tweaking what does: Socratic goals interview, clean-sheet design, existing work mined as evidence, options priced by AI-era costs; user-invoked.
 - **pull-focus** — periodic step during iterative refinement that rebuilds each area of work around one focal point, dropping stale framing and moving tangents into their own shots.
 
 **Debugging & diagnostics**
