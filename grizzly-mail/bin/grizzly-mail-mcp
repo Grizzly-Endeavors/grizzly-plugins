@@ -32,20 +32,23 @@ command -v python3 >/dev/null 2>&1 \
 OP_SERVICE_ACCOUNT_TOKEN="$(cat "$TOKEN_FILE")"
 export OP_SERVICE_ACCOUNT_TOKEN
 
-GRIZZLY_MAIL_PASSWORD="$(op read "$SECRET_PREFIX/claude_password")" \
+GRIZZLY_MAIL_CLAUDE_PASSWORD="$(op read "$SECRET_PREFIX/claude_password")" \
   || fail "could not read $SECRET_PREFIX/claude_password from 1Password (check the token at $TOKEN_FILE and the platform-stalwart item)."
-[ -n "$GRIZZLY_MAIL_PASSWORD" ] \
+[ -n "$GRIZZLY_MAIL_CLAUDE_PASSWORD" ] \
   || fail "1Password returned an empty claude_password — refusing to start with a blank credential."
-export GRIZZLY_MAIL_PASSWORD
+export GRIZZLY_MAIL_CLAUDE_PASSWORD
 
-# Optional company mailbox: one read, and any failure only costs that mailbox.
-if GRIZZLY_MAIL_BILLING_PASSWORD="$(op read "$SECRET_PREFIX/billing_password" 2>/dev/null)" \
-  && [ -n "$GRIZZLY_MAIL_BILLING_PASSWORD" ]; then
-  export GRIZZLY_MAIL_BILLING_PASSWORD
-else
-  unset GRIZZLY_MAIL_BILLING_PASSWORD
-  echo "grizzly-mail: billing_password unavailable ($SECRET_PREFIX/billing_password missing, empty or unreadable) — starting without the billing mailbox." >&2
-fi
+# Optional mailboxes (name = the key in the server's mailbox table): one read
+# each, and any failure only costs that mailbox.
+# shellcheck disable=SC2043  # one optional mailbox today; add names here
+for mb in billing; do
+  if val="$(op read "$SECRET_PREFIX/${mb}_password" 2>/dev/null)" && [ -n "$val" ]; then
+    export "GRIZZLY_MAIL_${mb^^}_PASSWORD=$val"
+  else
+    echo "grizzly-mail: ${mb}_password unavailable ($SECRET_PREFIX/${mb}_password missing, empty or unreadable) — starting without the $mb mailbox." >&2
+  fi
+done
+unset val
 
 # The server never talks to 1Password; keep the token out of its environment.
 unset OP_SERVICE_ACCOUNT_TOKEN

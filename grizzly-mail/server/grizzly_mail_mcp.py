@@ -12,8 +12,9 @@ and always closed: the server lives for a whole Claude session, and both
 Stalwart and the fronting HAProxy drop idle sockets, so a persistent
 connection would need stale-socket recovery in every tool for no real gain.
 
-Auth discipline: one login attempt per connection, never a retry loop. The
-only call that opens two (send_mail: SMTP, then IMAP to file the Sent copy)
+Auth discipline: one login attempt per connection, never a retry loop, and
+SMTP authenticates with a single mechanism (smtplib's login() would fall
+through several after a rejection). The only call that opens two (send_mail: SMTP, then IMAP to file the Sent copy)
 opens the second only after the first authenticated.
 The desktop's traffic hairpins via the VPS, so Stalwart sees the home public
 IP — outside the 10.0.0.0/8 ban allowlist — and repeated failed logins would
@@ -54,22 +55,28 @@ DELETED_FOLDER = "Deleted Items"
 # loaded (the launcher refuses to start without it). `billing` is the company
 # mailbox (it also receives admin@); its password is optional, so it may be
 # absent. `records` mailboxes never expunge: delete_message moves to
-# DELETED_FOLDER instead.
-MAILBOXES = {
+# DELETED_FOLDER instead. The key is the only place a mailbox is named: its
+# password arrives in GRIZZLY_MAIL_<KEY>_PASSWORD, read by the launcher from
+# the 1Password field platform-stalwart/<key>_password.
+MAILBOX_ROWS = {
     "claude": {
         "user": USER,
         "addresses": [USER],
-        "password": os.environ.get("GRIZZLY_MAIL_PASSWORD", ""),
-        "field": "claude_password",
         "records": False,
     },
     "billing": {
         "user": f"billing@{DOMAIN}",
         "addresses": [f"billing@{DOMAIN}", f"admin@{DOMAIN}"],
-        "password": os.environ.get("GRIZZLY_MAIL_BILLING_PASSWORD", ""),
-        "field": "billing_password",
         "records": True,
     },
+}
+MAILBOXES = {
+    key: {
+        **row,
+        "password": os.environ.get(f"GRIZZLY_MAIL_{key.upper()}_PASSWORD", ""),
+        "field": f"{key}_password",
+    }
+    for key, row in MAILBOX_ROWS.items()
 }
 DEFAULT_MAILBOX = "claude"
 
@@ -175,6 +182,30 @@ def select_folder(conn, folder, readonly):
 
 class ToolError(Exception):
     """A tool failure with a message already fit for the caller."""
+
+
+def get_uid(args):
+    """The `uid` argument as a plain positive integer string.
+
+    imaplib sends string arguments to the server unquoted, so a uid like `*`
+    or `1:*` would address many messages and a space would add arguments.
+    """
+    uid = str(args["uid"]).strip()
+    if not (uid.isascii() and uid.isdigit()) or int(uid) < 1:
+        raise ToolError(
+            f"uid must be a single positive number (got {uid!r}) — "
+            "list_messages shows them."
+        )
+    return uid
+
+
+def check_folder_name(folder):
+    """Reject folder names the quoting in this file cannot send safely."""
+    if not folder or '"' in folder or "\\" in folder or not folder.isascii():
+        raise ToolError(
+            f"folder name {folder!r} is not allowed — use a non-empty "
+            "ASCII name without quotes or backslashes."
+        )
 
 
 def list_folder_names(conn):
@@ -396,7 +427,9 @@ def tool_send_mail(args):
     attached = attach_files(msg, args.get("attach") or [])
     try:
         with smtplib.SMTP_SSL(HOST, SMTP_PORT, timeout=30) as smtp:
-            smtp.login(mb["user"], mb["password"])
+            smtp.ehlo()
+            smtp.user, smtp.password = mb["user"], mb["password"]
+            smtp.auth("PLAIN", smtp.auth_plain)  # exactly one attempt
             smtp.send_message(msg)
     except smtplib.SMTPAuthenticationError:
         raise ToolError(auth_error(mb)) from None
@@ -480,7 +513,7 @@ def tool_list_messages(args):
 
 def tool_read_message(args):
     _, mb = get_mailbox(args)
-    uid = str(args["uid"])
+    uid = get_uid(args)
     folder = args.get("folder", "INBOX")
     max_bytes = int(args.get("max_bytes", 4096))
     mark_seen = bool(args.get("mark_seen", True))
@@ -511,7 +544,7 @@ def tool_read_message(args):
 
 def tool_save_attachment(args):
     _, mb = get_mailbox(args)
-    uid = str(args["uid"])
+    uid = get_uid(args)
     folder = args.get("folder", "INBOX")
     index = int(args["index"])
     dest = args["dest"]
@@ -560,36 +593,38 @@ def require_uid(conn, uid, folder):
         )
 
 
+def imap_detail(data):
+    return (data[0] or b"").decode(errors="replace") if data else ""
+
+
 def move_uid(conn, uid, source, dest):
-    """Copy uid from source to dest (created if absent), then remove the
-    source copy. The source copy is removed only after the copy succeeded, so
-    a failure never loses the message. Returns True when dest was created.
+    """Atomically move one uid from source to dest (created if absent) with
+    UID MOVE. Never falls back to copy-and-expunge: without MOVE support it
+    fails and leaves the message alone. Returns True when dest was created.
     Connection must be logged in; selects source read-write."""
+    check_folder_name(dest)
+    if "MOVE" not in conn.capabilities:
+        raise ToolError("the server does not advertise IMAP MOVE — nothing "
+                        "was moved.")
     select_folder(conn, source, readonly=False)
     require_uid(conn, uid, source)
     created = dest not in list_folder_names(conn)
     if created:
         typ, data = conn.create(f'"{dest}"')
         if typ != "OK":
-            detail = (data[0] or b"").decode(errors="replace")
-            raise ToolError(f"cannot create folder {dest!r} ({detail}) — "
-                            "the message was not moved.")
-    typ, data = conn.uid("copy", uid, f'"{dest}"')
+            raise ToolError(f"cannot create folder {dest!r} "
+                            f"({imap_detail(data)}) — the message was not "
+                            "moved.")
+    typ, data = conn.uid("MOVE", uid, f'"{dest}"')
     if typ != "OK":
-        detail = (data[0] or b"").decode(errors="replace")
-        raise ToolError(f"copy to {dest!r} failed ({detail}) — the message "
-                        f"is still in {source}.")
-    conn.uid("store", uid, "+FLAGS", r"(\Deleted)")
-    if "UIDPLUS" in conn.capabilities:
-        conn.uid("expunge", uid)  # only this message, not other \Deleted ones
-    else:
-        conn.expunge()
+        raise ToolError(f"move to {dest!r} failed ({imap_detail(data)}) — "
+                        f"the message is still in {source}.")
     return created
 
 
 def tool_delete_message(args):
     name, mb = get_mailbox(args)
-    uid = str(args["uid"])
+    uid = get_uid(args)
     folder = args.get("folder", "INBOX")
     conn = imap_connect(mb)
     try:
@@ -605,8 +640,15 @@ def tool_delete_message(args):
                     "expunged; the message is recoverable from there)")
         select_folder(conn, folder, readonly=False)
         require_uid(conn, uid, folder)
-        conn.uid("store", uid, "+FLAGS", r"(\Deleted)")
-        conn.expunge()
+        typ, data = conn.uid("store", uid, "+FLAGS", r"(\Deleted)")
+        if typ != "OK":
+            raise ToolError(f"could not flag uid {uid} for deletion "
+                            f"({imap_detail(data)}) — nothing was deleted.")
+        typ, data = conn.expunge()
+        if typ != "OK":
+            raise ToolError(f"expunge failed ({imap_detail(data)}) — uid "
+                            f"{uid} may still be flagged \\Deleted in "
+                            f"{folder}.")
     finally:
         imap_close(conn)
     return f"deleted uid={uid} from {folder}"
@@ -614,7 +656,7 @@ def tool_delete_message(args):
 
 def tool_move_message(args):
     name, mb = get_mailbox(args)
-    uid = str(args["uid"])
+    uid = get_uid(args)
     source = args["source_folder"]
     dest = args["dest_folder"]
     if source == dest:
@@ -825,11 +867,13 @@ TOOLS = [
     {
         "name": "delete_message",
         "description": (
-            "Delete one message by uid. In the claude mailbox this flags and "
-            "expunges (permanent) — use it to clean up test mail. In the "
-            f"billing mailbox, which holds company records, it instead moves "
-            f"the message to {DELETED_FOLDER} (recoverable) and says so; "
-            "to file handled mail use move_message."
+            "Delete one message by uid. In a mailbox that does not hold "
+            "records this flags and expunges (permanent) — use it to clean "
+            "up test mail. In a records mailbox "
+            f"({', '.join(n for n, m in MAILBOXES.items() if m['records'])}) "
+            f"it instead moves the message to {DELETED_FOLDER} "
+            "(recoverable) and says so; to file handled mail use "
+            "move_message."
         ),
         "inputSchema": {
             "type": "object",
