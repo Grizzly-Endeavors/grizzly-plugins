@@ -1,6 +1,17 @@
 # grizzly-mail
 
-An MCP server giving Claude Code its own mailbox: `claude@grizzly-endeavors.com` on the self-hosted Stalwart mail server. Built for end-to-end mail testing — prove a mail flow works by actually sending and receiving.
+An MCP server giving Claude Code access to two mailboxes on the self-hosted Stalwart mail server: its own test mailbox `claude@grizzly-endeavors.com`, built for end-to-end mail testing, and the company mailbox `billing@grizzly-endeavors.com` (which also receives `admin@`), for reading, filing and answering the company's bank, payment, government and vendor mail.
+
+## Mailboxes
+
+Every tool takes an optional `mailbox` argument; it defaults to `claude`, so existing callers are unaffected.
+
+| Mailbox | Login | Addresses | Deleting |
+|---|---|---|---|
+| `claude` | `claude@grizzly-endeavors.com` | `claude@` | `delete_message` expunges |
+| `billing` | `billing@grizzly-endeavors.com` | `billing@`, `admin@` | `delete_message` moves to `Deleted Items` (recoverable); use `move_message` to file handled mail |
+
+A call naming a mailbox whose password was not loaded returns an error naming the missing 1Password field.
 
 ## Install
 
@@ -8,26 +19,28 @@ An MCP server giving Claude Code its own mailbox: `claude@grizzly-endeavors.com`
 /plugin install grizzly-mail@grizzly-plugins
 ```
 
-**Prerequisite:** the machine must hold the 1Password operator service-account token at `~/.config/op-tokens/operator` (override with `GRIZZLY_MAIL_OP_TOKEN_FILE`) and have the `op` CLI installed. The launcher reads the mailbox password from `op://grizzly-platform/platform-stalwart/claude_password` once per session; without the token the server refuses to start with a clear error. This plugin is only useful on Grizzly Endeavors machines.
+**Prerequisite:** the machine must hold the 1Password operator service-account token at `~/.config/op-tokens/operator` (override with `GRIZZLY_MAIL_OP_TOKEN_FILE`) and have the `op` CLI installed. The launcher reads `op://grizzly-platform/platform-stalwart/claude_password` and `.../billing_password` once each per session. `claude_password` is required: without it (or the token) the server refuses to start with a clear error. `billing_password` is optional: if it is missing, empty or unreadable the launcher writes one line to stderr and starts with only the `claude` mailbox. This plugin is only useful on Grizzly Endeavors machines.
 
 ## Tools
 
 | Tool | What it does |
 |---|---|
-| `send_mail` | Send plain-text mail as `claude@grizzly-endeavors.com` (From is fixed for DMARC alignment), optionally with attachments; files a copy in `Sent Items` |
+| `send_mail` | Send plain-text mail from the mailbox, as one of its addresses (`from_address`, default the primary; the domain is fixed for DMARC alignment), optionally with attachments; files a copy in `Sent Items` |
 | `list_messages` | Compact newest-first listing of a folder (uid, flags, date, from, subject) |
 | `read_message` | Headers + text body of one message by uid, truncated by default, with any attachments listed |
 | `save_attachment` | Write one attachment to a path on disk and return where it landed |
-| `delete_message` | Delete a message by uid — clean up test mail |
+| `delete_message` | Delete a message by uid — clean up test mail (in `billing`, moves to `Deleted Items` instead of expunging) |
+| `move_message` | Move a message by uid between folders of one mailbox, creating the destination if absent — file handled mail |
+| `list_folders` | List every folder in a mailbox |
 | `wait_for_message` | Poll for a matching unseen message (junk folder included) — the receive half of a round-trip test |
 
 Attachment contents are never inlined into tool output: `read_message` lists what a message carries, and `save_attachment` puts the bytes on disk to open with ordinary file tools. Bytes are written exactly as they arrived — archives stay packed, so unpack them yourself.
 
-The bundled `grizzly-mail` skill carries the usage conventions: self-round-trip as the canonical check, cleanup discipline, and the stop-immediately rule on auth failures (repeated failed logins IP-ban the client on the server).
+The bundled `grizzly-mail` skill carries the usage conventions: self-round-trip as the canonical check, cleanup discipline, the company mailbox as a record, and the stop-immediately rule on auth failures (repeated failed logins IP-ban the client on the server).
 
 ## How it works
 
-`bin/grizzly-mail-mcp` (bash) fetches the mailbox password from 1Password once, then execs `server/grizzly_mail_mcp.py` — a single-file, stdlib-only Python server speaking newline-delimited JSON-RPC 2.0 over stdio. No SDK, no dependencies, no build step. Mail goes over implicit-TLS SMTP (465) and IMAPS (993) to the public `mail.grizzly-endeavors.com` host; connections are opened fresh per tool call.
+`bin/grizzly-mail-mcp` (bash) fetches the mailbox passwords from 1Password once, then execs `server/grizzly_mail_mcp.py` — a single-file, stdlib-only Python server speaking newline-delimited JSON-RPC 2.0 over stdio. No SDK, no dependencies, no build step. Mail goes over implicit-TLS SMTP (465) and IMAPS (993) to the public `mail.grizzly-endeavors.com` host; connections are opened fresh per tool call.
 
 The plugin's `bin/` directory lands on the Bash tool PATH like every plugin's; running `grizzly-mail-mcp` by hand just starts a JSON-RPC loop on stdin, which is also the smoke-test path:
 
@@ -40,4 +53,4 @@ printf '%s\n' \
 
 ## Server-side account
 
-The mailbox is provisioned as IaC in the grizzly-platform repo (`ansible/playbooks/configure-stalwart.yml`); the operator runbook is `docs/runbooks/mail.md` there.
+The mailboxes are provisioned as IaC in the grizzly-platform repo (`ansible/playbooks/configure-stalwart.yml`); the operator runbook is `docs/runbooks/mail.md` there.

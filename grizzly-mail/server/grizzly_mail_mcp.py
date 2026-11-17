@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
-"""grizzly-mail MCP server: send/receive mail as the claude agent mailbox.
+"""grizzly-mail MCP server: send/receive mail for the agent and company mailboxes.
 
 Stdlib-only. Speaks newline-delimited JSON-RPC 2.0 over stdio (initialize /
 tools/list / tools/call / ping); stdout carries the protocol, stderr carries
-diagnostics. Configuration and the mailbox password arrive via the process
-environment, set by bin/grizzly-mail-mcp.
+diagnostics. Configuration and the mailbox passwords arrive via the process
+environment, set by bin/grizzly-mail-mcp. Every tool takes an optional
+`mailbox` argument naming a row of MAILBOXES (default `claude`).
 
 Connections are opened fresh per tool call (and per poll in wait_for_message)
 and always closed: the server lives for a whole Claude session, and both
 Stalwart and the fronting HAProxy drop idle sockets, so a persistent
 connection would need stale-socket recovery in every tool for no real gain.
 
-Auth discipline: one login attempt per connection, never a retry loop. The
-only call that opens two (send_mail: SMTP, then IMAP to file the Sent copy)
+Auth discipline: one login attempt per connection, never a retry loop, and
+SMTP authenticates with a single mechanism (smtplib's login() would fall
+through several after a rejection). The only call that opens two (send_mail: SMTP, then IMAP to file the Sent copy)
 opens the second only after the first authenticated.
 The desktop's traffic hairpins via the VPS, so Stalwart sees the home public
 IP — outside the 10.0.0.0/8 ban allowlist — and repeated failed logins would
@@ -39,15 +41,44 @@ from html.parser import HTMLParser
 
 HOST = os.environ["GRIZZLY_MAIL_HOST"]
 USER = os.environ["GRIZZLY_MAIL_USER"]
-PASSWORD = os.environ["GRIZZLY_MAIL_PASSWORD"]
 SMTP_PORT = int(os.environ["GRIZZLY_MAIL_SMTP_PORT"])
 IMAP_PORT = int(os.environ["GRIZZLY_MAIL_IMAP_PORT"])
 DOMAIN = USER.rsplit("@", 1)[1]
 
-SERVER_INFO = {"name": "grizzly-mail", "version": "0.3.0"}
+SERVER_INFO = {"name": "grizzly-mail", "version": "0.4.0"}
 FALLBACK_PROTOCOL = "2024-11-05"
 JUNK_FOLDER = "Junk Mail"
 SENT_FOLDER = "Sent Items"
+DELETED_FOLDER = "Deleted Items"
+
+# The fixed mailbox table. `claude` is the agent's test mailbox and is always
+# loaded (the launcher refuses to start without it). `billing` is the company
+# mailbox (it also receives admin@); its password is optional, so it may be
+# absent. `records` mailboxes never expunge: delete_message moves to
+# DELETED_FOLDER instead. The key is the only place a mailbox is named: its
+# password arrives in GRIZZLY_MAIL_<KEY>_PASSWORD, read by the launcher from
+# the 1Password field platform-stalwart/<key>_password.
+MAILBOX_ROWS = {
+    "claude": {
+        "user": USER,
+        "addresses": [USER],
+        "records": False,
+    },
+    "billing": {
+        "user": f"billing@{DOMAIN}",
+        "addresses": [f"billing@{DOMAIN}", f"admin@{DOMAIN}"],
+        "records": True,
+    },
+}
+MAILBOXES = {
+    key: {
+        **row,
+        "password": os.environ.get(f"GRIZZLY_MAIL_{key.upper()}_PASSWORD", ""),
+        "field": f"{key}_password",
+    }
+    for key, row in MAILBOX_ROWS.items()
+}
+DEFAULT_MAILBOX = "claude"
 
 # Outbound attachments are capped well under the relay's own ceiling so an
 # oversized send fails here, instantly and legibly, instead of after a slow
@@ -67,14 +98,20 @@ ENCODING_TYPES = {
     "br": "application/x-brotli",
 }
 
-AUTH_ERROR = (
-    f"authentication failed for {USER} — the password in 1Password "
-    "(platform-stalwart/claude_password) may not match Stalwart, or the "
-    "account isn't provisioned. STOP: do not retry — repeated failures will "
-    "IP-ban this machine's public IP on the mail server (recovery is a "
-    "port-forward + delete BlockedIp, see grizzly-platform "
-    "docs/runbooks/mail.md). Fix the credential, then restart the MCP server."
-)
+
+
+def auth_error(mb):
+    return (
+        f"authentication failed for {mb['user']} — the password in 1Password "
+        f"(platform-stalwart/{mb['field']}) may not match Stalwart, or the "
+        "account isn't provisioned. STOP: do not retry — repeated failures "
+        "will IP-ban this machine's public IP on the mail server (recovery "
+        "is a port-forward + delete BlockedIp, see grizzly-platform "
+        "docs/runbooks/mail.md). Fix the credential, then restart the MCP "
+        "server."
+    )
+
+
 NETWORK_ERROR = (
     f"cannot reach {HOST} — network or VPS-ingress issue (this can be "
     "transient; a single re-call is safe). See grizzly-platform "
@@ -90,16 +127,37 @@ RESET_ERROR = (
 # ---------------------------------------------------------------------------
 # mail helpers
 
-def imap_connect():
+def get_mailbox(args):
+    """Resolve the `mailbox` argument to (name, table row), or raise."""
+    name = args.get("mailbox") or DEFAULT_MAILBOX
+    mb = MAILBOXES.get(name)
+    if mb is None:
+        raise ToolError(
+            f"unknown mailbox {name!r} — choose one of "
+            f"{', '.join(MAILBOXES)}."
+        )
+    if not mb["password"]:
+        raise ToolError(
+            f"mailbox {name!r} is not available: its password was not loaded "
+            f"at server start (1Password field platform-stalwart/"
+            f"{mb['field']} was missing, empty, or unreadable). Provision the "
+            "field, then restart the MCP server. No login was attempted."
+        )
+    return name, mb
+
+
+def imap_connect(mb):
     """Fresh authenticated IMAP connection. One login attempt, no retries."""
     conn = imaplib.IMAP4_SSL(HOST, IMAP_PORT, timeout=30)
     try:
-        conn.login(USER, PASSWORD)
-    except imaplib.IMAP4.error:
+        conn.login(mb["user"], mb["password"])
+    except imaplib.IMAP4.error as exc:
         try:
             conn.logout()
         except Exception:
             pass
+        if re.search(r"auth|login|credential", str(exc), re.IGNORECASE):
+            raise ToolError(auth_error(mb)) from None
         raise
     return conn
 
@@ -124,6 +182,49 @@ def select_folder(conn, folder, readonly):
 
 class ToolError(Exception):
     """A tool failure with a message already fit for the caller."""
+
+
+def get_uid(args):
+    """The `uid` argument as a plain positive integer string.
+
+    imaplib sends string arguments to the server unquoted, so a uid like `*`
+    or `1:*` would address many messages and a space would add arguments.
+    """
+    uid = str(args["uid"]).strip()
+    if not (uid.isascii() and uid.isdigit()) or int(uid) < 1:
+        raise ToolError(
+            f"uid must be a single positive number (got {uid!r}) — "
+            "list_messages shows them."
+        )
+    return uid
+
+
+def check_folder_name(folder):
+    """Reject folder names the quoting in this file cannot send safely."""
+    if not folder or '"' in folder or "\\" in folder or not folder.isascii():
+        raise ToolError(
+            f"folder name {folder!r} is not allowed — use a non-empty "
+            "ASCII name without quotes or backslashes."
+        )
+
+
+def list_folder_names(conn):
+    """Names of every folder on the logged-in connection."""
+    typ, data = conn.list()
+    if typ != "OK":
+        raise ToolError("could not list folders on the server.")
+    names = []
+    for item in data:
+        if not isinstance(item, bytes):
+            continue
+        m = re.match(rb'\((?P<flags>[^)]*)\) (?:"[^"]*"|NIL) (?P<name>.+)$',
+                     item)
+        if m:
+            name = m.group("name").decode(errors="replace")
+            if name.startswith('"') and name.endswith('"'):
+                name = name[1:-1].replace('\\"', '"')
+            names.append(name)
+    return names
 
 
 def parse_fetch_headers(data):
@@ -304,12 +405,19 @@ def resolve_dest(dest, filename):
 # tools
 
 def tool_send_mail(args):
+    name, mb = get_mailbox(args)
     to = args["to"]
+    sender = args.get("from_address") or mb["addresses"][0]
+    if sender.lower() not in (a.lower() for a in mb["addresses"]):
+        raise ToolError(
+            f"from_address {sender!r} is not an address of mailbox {name!r} "
+            f"— use one of: {', '.join(mb['addresses'])}. Nothing was sent."
+        )
     msg = EmailMessage()
-    msg["From"] = USER  # fixed sender: DMARC alignment is anchored on DOMAIN
+    msg["From"] = sender  # one of the mailbox's own addresses; same domain
     msg["To"] = to
     msg["Subject"] = args["subject"]
-    msg["Message-ID"] = email.utils.make_msgid(domain=DOMAIN)
+    msg["Message-ID"] = email.utils.make_msgid(domain=sender.rsplit("@", 1)[1])
     msg["Date"] = email.utils.formatdate(localtime=True)
     if args.get("cc"):
         msg["Cc"] = args["cc"]
@@ -317,15 +425,21 @@ def tool_send_mail(args):
         msg["Reply-To"] = args["reply_to"]
     msg.set_content(args["body"])
     attached = attach_files(msg, args.get("attach") or [])
-    with smtplib.SMTP_SSL(HOST, SMTP_PORT, timeout=30) as smtp:
-        smtp.login(USER, PASSWORD)
-        smtp.send_message(msg)
+    try:
+        with smtplib.SMTP_SSL(HOST, SMTP_PORT, timeout=30) as smtp:
+            smtp.ehlo()
+            smtp.user, smtp.password = mb["user"], mb["password"]
+            smtp.auth("PLAIN", smtp.auth_plain)  # exactly one attempt
+            smtp.send_message(msg)
+    except smtplib.SMTPAuthenticationError:
+        raise ToolError(auth_error(mb)) from None
     note = f" with {len(attached)} attachment(s): {', '.join(attached)}" \
         if attached else ""
-    return f"sent {msg['Message-ID']} to {to}{note}{save_sent_copy(msg)}"
+    return (f"sent {msg['Message-ID']} from {sender} to {to}{note}"
+            f"{save_sent_copy(mb, msg)}")
 
 
-def save_sent_copy(msg):
+def save_sent_copy(mb, msg):
     """File a copy of a sent message in Sent Items; return a status suffix.
 
     SMTP submission doesn't store anything, so without this the operator
@@ -335,7 +449,7 @@ def save_sent_copy(msg):
     as a failed send and invite a duplicate resend.
     """
     try:
-        conn = imap_connect()
+        conn = imap_connect(mb)
     except Exception as exc:
         return f" (but saving a copy to {SENT_FOLDER} failed: {exc})"
     try:
@@ -382,10 +496,11 @@ def attach_files(msg, paths):
 
 
 def tool_list_messages(args):
+    _, mb = get_mailbox(args)
     folder = args.get("folder", "INBOX")
     limit = min(int(args.get("limit", 10)), 50)
     unseen_only = bool(args.get("unseen_only", False))
-    conn = imap_connect()
+    conn = imap_connect(mb)
     try:
         lines, total = fetch_summaries(conn, folder, unseen_only, limit)
     finally:
@@ -397,11 +512,12 @@ def tool_list_messages(args):
 
 
 def tool_read_message(args):
-    uid = str(args["uid"])
+    _, mb = get_mailbox(args)
+    uid = get_uid(args)
     folder = args.get("folder", "INBOX")
     max_bytes = int(args.get("max_bytes", 4096))
     mark_seen = bool(args.get("mark_seen", True))
-    conn = imap_connect()
+    conn = imap_connect(mb)
     try:
         raw = fetch_raw_message(conn, uid, folder, readonly=not mark_seen)
         if mark_seen:
@@ -427,12 +543,13 @@ def tool_read_message(args):
 
 
 def tool_save_attachment(args):
-    uid = str(args["uid"])
+    _, mb = get_mailbox(args)
+    uid = get_uid(args)
     folder = args.get("folder", "INBOX")
     index = int(args["index"])
     dest = args["dest"]
     overwrite = bool(args.get("overwrite", False))
-    conn = imap_connect()
+    conn = imap_connect(mb)
     try:
         raw = fetch_raw_message(conn, uid, folder, readonly=True)
     finally:
@@ -467,26 +584,107 @@ def tool_save_attachment(args):
     )
 
 
+def require_uid(conn, uid, folder):
+    typ, data = conn.uid("search", None, f"UID {uid}")
+    if typ != "OK" or not data[0]:
+        raise ToolError(
+            f"uid {uid} not found in {folder} (already deleted or wrong "
+            "folder — list_messages to check)."
+        )
+
+
+def imap_detail(data):
+    return (data[0] or b"").decode(errors="replace") if data else ""
+
+
+def move_uid(conn, uid, source, dest):
+    """Atomically move one uid from source to dest (created if absent) with
+    UID MOVE. Never falls back to copy-and-expunge: without MOVE support it
+    fails and leaves the message alone. Returns True when dest was created.
+    Connection must be logged in; selects source read-write."""
+    check_folder_name(dest)
+    if "MOVE" not in conn.capabilities:
+        raise ToolError("the server does not advertise IMAP MOVE — nothing "
+                        "was moved.")
+    select_folder(conn, source, readonly=False)
+    require_uid(conn, uid, source)
+    created = dest not in list_folder_names(conn)
+    if created:
+        typ, data = conn.create(f'"{dest}"')
+        if typ != "OK":
+            raise ToolError(f"cannot create folder {dest!r} "
+                            f"({imap_detail(data)}) — the message was not "
+                            "moved.")
+    typ, data = conn.uid("MOVE", uid, f'"{dest}"')
+    if typ != "OK":
+        raise ToolError(f"move to {dest!r} failed ({imap_detail(data)}) — "
+                        f"the message is still in {source}.")
+    return created
+
+
 def tool_delete_message(args):
-    uid = str(args["uid"])
+    name, mb = get_mailbox(args)
+    uid = get_uid(args)
     folder = args.get("folder", "INBOX")
-    conn = imap_connect()
+    conn = imap_connect(mb)
     try:
+        if mb["records"]:
+            if folder == DELETED_FOLDER:
+                raise ToolError(
+                    f"uid {uid} is already in {DELETED_FOLDER} — mailbox "
+                    f"{name!r} never expunges; leave it there."
+                )
+            move_uid(conn, uid, folder, DELETED_FOLDER)
+            return (f"moved uid={uid} from {folder} to {DELETED_FOLDER} "
+                    f"(mailbox {name!r} holds records, so nothing is "
+                    "expunged; the message is recoverable from there)")
         select_folder(conn, folder, readonly=False)
-        typ, data = conn.uid("search", None, f"UID {uid}")
-        if typ != "OK" or not data[0]:
-            raise ToolError(
-                f"uid {uid} not found in {folder} (already deleted or wrong "
-                "folder — list_messages to check)."
-            )
-        conn.uid("store", uid, "+FLAGS", r"(\Deleted)")
-        conn.expunge()
+        require_uid(conn, uid, folder)
+        typ, data = conn.uid("store", uid, "+FLAGS", r"(\Deleted)")
+        if typ != "OK":
+            raise ToolError(f"could not flag uid {uid} for deletion "
+                            f"({imap_detail(data)}) — nothing was deleted.")
+        typ, data = conn.expunge()
+        if typ != "OK":
+            raise ToolError(f"expunge failed ({imap_detail(data)}) — uid "
+                            f"{uid} may still be flagged \\Deleted in "
+                            f"{folder}.")
     finally:
         imap_close(conn)
     return f"deleted uid={uid} from {folder}"
 
 
+def tool_move_message(args):
+    name, mb = get_mailbox(args)
+    uid = get_uid(args)
+    source = args["source_folder"]
+    dest = args["dest_folder"]
+    if source == dest:
+        raise ToolError(f"source and destination are both {source!r}.")
+    conn = imap_connect(mb)
+    try:
+        created = move_uid(conn, uid, source, dest)
+    finally:
+        imap_close(conn)
+    note = f" (created folder {dest!r})" if created else ""
+    return (f"moved uid={uid} from {source} to {dest} in mailbox "
+            f"{name!r}{note}; it has a new uid there — list_messages "
+            f"folder={dest!r} to find it")
+
+
+def tool_list_folders(args):
+    name, mb = get_mailbox(args)
+    conn = imap_connect(mb)
+    try:
+        folders = list_folder_names(conn)
+    finally:
+        imap_close(conn)
+    return "\n".join([f"{len(folders)} folder(s) in mailbox {name!r}:"]
+                      + [f"  {f}" for f in folders])
+
+
 def tool_wait_for_message(args):
+    _, mb = get_mailbox(args)
     subject_contains = args.get("subject_contains", "")
     from_contains = args.get("from_contains", "")
     if not subject_contains and not from_contains:
@@ -506,7 +704,7 @@ def tool_wait_for_message(args):
 
     deadline = time.monotonic() + timeout_s
     while True:
-        conn = imap_connect()
+        conn = imap_connect(mb)
         try:
             for fld in folders:
                 select_folder(conn, fld, readonly=True)
@@ -537,19 +735,41 @@ def tool_wait_for_message(args):
         time.sleep(min(poll, max(deadline - time.monotonic(), 0.1)))
 
 
+MAILBOX_PROP = {
+    "type": "string",
+    "enum": list(MAILBOXES),
+    "default": DEFAULT_MAILBOX,
+    "description": (
+        "Which mailbox to act on: "
+        + "; ".join(f"{n} = {', '.join(m['addresses'])}"
+                    for n, m in MAILBOXES.items())
+    ),
+}
+
 TOOLS = [
     {
         "name": "send_mail",
         "description": (
-            f"Send a plain-text email as {USER}. The From address is fixed "
-            "(DMARC alignment). Returns the Message-ID; a copy is filed in "
-            f"{SENT_FOLDER}. Delivery to any "
-            "mailbox on the platform (including this one) takes ~1-2 minutes "
-            "— pair with wait_for_message for a round-trip check."
+            "Send a plain-text email from the chosen mailbox, as one of that "
+            "mailbox's own addresses (from_address; default its primary — "
+            "the domain is fixed for DMARC alignment). Returns the "
+            f"Message-ID; a copy is filed in the mailbox's {SENT_FOLDER}. "
+            "Delivery to any mailbox on the platform (including this one) "
+            "takes ~1-2 minutes — pair with wait_for_message for a "
+            "round-trip check."
         ),
         "inputSchema": {
             "type": "object",
             "properties": {
+                "mailbox": MAILBOX_PROP,
+                "from_address": {
+                    "type": "string",
+                    "description": (
+                        "Optional sender; must be one of the chosen "
+                        "mailbox's addresses (default: its primary). To "
+                        "reply, use the address the thread was sent to."
+                    ),
+                },
                 "to": {"type": "string", "description": "Recipient address"},
                 "subject": {"type": "string"},
                 "body": {"type": "string", "description": "Plain-text body"},
@@ -573,12 +793,14 @@ TOOLS = [
         "name": "list_messages",
         "description": (
             "List messages in a mailbox folder, newest first, one compact "
-            "line each (uid, flags, date, from, subject). Folders: INBOX, "
-            "\"Junk Mail\", \"Sent Items\", Drafts, \"Deleted Items\"."
+            "line each (uid, flags, date, from, subject). Default folders: "
+            "INBOX, \"Junk Mail\", \"Sent Items\", Drafts, "
+            "\"Deleted Items\"; list_folders shows the rest."
         ),
         "inputSchema": {
             "type": "object",
             "properties": {
+                "mailbox": MAILBOX_PROP,
                 "folder": {"type": "string", "default": "INBOX"},
                 "limit": {"type": "integer", "default": 10, "maximum": 50},
                 "unseen_only": {"type": "boolean", "default": False},
@@ -597,6 +819,7 @@ TOOLS = [
         "inputSchema": {
             "type": "object",
             "properties": {
+                "mailbox": MAILBOX_PROP,
                 "uid": {"type": "string"},
                 "folder": {"type": "string", "default": "INBOX"},
                 "max_bytes": {"type": "integer", "default": 4096},
@@ -617,6 +840,7 @@ TOOLS = [
         "inputSchema": {
             "type": "object",
             "properties": {
+                "mailbox": MAILBOX_PROP,
                 "uid": {"type": "string"},
                 "index": {
                     "type": "integer",
@@ -642,15 +866,51 @@ TOOLS = [
     },
     {
         "name": "delete_message",
-        "description": "Delete one message by uid (flag + expunge). "
-                       "Clean up test mail when done with it.",
+        "description": (
+            "Delete one message by uid. In a mailbox that does not hold "
+            "records this flags and expunges (permanent) — use it to clean "
+            "up test mail. In a records mailbox "
+            f"({', '.join(n for n, m in MAILBOXES.items() if m['records'])}) "
+            f"it instead moves the message to {DELETED_FOLDER} "
+            "(recoverable) and says so; to file handled mail use "
+            "move_message."
+        ),
         "inputSchema": {
             "type": "object",
             "properties": {
+                "mailbox": MAILBOX_PROP,
                 "uid": {"type": "string"},
                 "folder": {"type": "string", "default": "INBOX"},
             },
             "required": ["uid"],
+        },
+    },
+    {
+        "name": "move_message",
+        "description": (
+            "Move one message by uid from one folder to another in the same "
+            "mailbox, creating the destination folder if it does not exist. "
+            "Use this to file handled mail. The message gets a new uid in "
+            "the destination."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "mailbox": MAILBOX_PROP,
+                "uid": {"type": "string"},
+                "source_folder": {"type": "string"},
+                "dest_folder": {"type": "string"},
+            },
+            "required": ["uid", "source_folder", "dest_folder"],
+        },
+    },
+    {
+        "name": "list_folders",
+        "description": "List every folder in a mailbox, including any "
+                       "created with move_message.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"mailbox": MAILBOX_PROP},
         },
     },
     {
@@ -664,6 +924,7 @@ TOOLS = [
         "inputSchema": {
             "type": "object",
             "properties": {
+                "mailbox": MAILBOX_PROP,
                 "subject_contains": {"type": "string"},
                 "from_contains": {"type": "string"},
                 "folder": {"type": "string", "default": "INBOX"},
@@ -681,6 +942,8 @@ TOOL_HANDLERS = {
     "read_message": tool_read_message,
     "save_attachment": tool_save_attachment,
     "delete_message": tool_delete_message,
+    "move_message": tool_move_message,
+    "list_folders": tool_list_folders,
     "wait_for_message": tool_wait_for_message,
 }
 
@@ -689,13 +952,8 @@ def error_text(exc):
     """Map an exception to actionable caller-facing text."""
     if isinstance(exc, ToolError):
         return str(exc)
-    if isinstance(exc, smtplib.SMTPAuthenticationError):
-        return AUTH_ERROR
     if isinstance(exc, imaplib.IMAP4.error):
-        text = str(exc)
-        if re.search(r"auth|login|credential", text, re.IGNORECASE):
-            return AUTH_ERROR
-        return f"IMAP error: {text}"
+        return f"IMAP error: {exc}"
     if isinstance(exc, ConnectionResetError):
         return RESET_ERROR
     if isinstance(exc, (socket.timeout, TimeoutError, ConnectionRefusedError,

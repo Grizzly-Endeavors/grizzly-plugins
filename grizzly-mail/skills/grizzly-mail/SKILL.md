@@ -1,11 +1,14 @@
 ---
 name: grizzly-mail
-description: Conventions for the grizzly-mail MCP tools (send_mail, list_messages, read_message, save_attachment, delete_message, wait_for_message) — the claude@grizzly-endeavors.com agent mailbox on the self-hosted Stalwart server. Use whenever sending or checking mail through those tools, reading or pulling down an attachment, testing a mail flow end-to-end (invite emails, notifications, deliverability), or verifying that the platform's mail path works. Also covers what to do on an authentication failure.
+description: Conventions for the grizzly-mail MCP tools (send_mail, list_messages, read_message, save_attachment, delete_message, move_message, list_folders, wait_for_message) — the claude@grizzly-endeavors.com agent mailbox and the billing@/admin@ company mailbox on the self-hosted Stalwart server. Use whenever sending or checking mail through those tools, reading, filing or answering company mail (bank, payment, government, vendor), pulling down an attachment, testing a mail flow end-to-end (invite emails, notifications, deliverability), or verifying that the platform's mail path works. Also covers what to do on an authentication failure.
 ---
 
-# grizzly-mail: the agent mailbox
+# grizzly-mail: the agent and company mailboxes
 
-You have your own mailbox: `claude@grizzly-endeavors.com` on the platform's Stalwart server. It exists for testing and automation — proving mail flows work, receiving test messages from apps, checking deliverability. It is not a bulk sender and not a place to route anything important.
+The tools serve two mailboxes on the platform's Stalwart server, chosen with the optional `mailbox` argument on every tool (default `claude`):
+
+- `claude` — `claude@grizzly-endeavors.com`, your own mailbox. It exists for testing and automation: proving mail flows work, receiving test messages from apps, checking deliverability. It is not a bulk sender and not a place to route anything important.
+- `billing` — `billing@grizzly-endeavors.com`, which also receives `admin@grizzly-endeavors.com`. It is the company mailbox; see below. If a call reports the mailbox unavailable, tell Bear the 1Password field the error names and stop using that mailbox; restarting the server is the only way to load it.
 
 ## The canonical end-to-end check
 
@@ -21,12 +24,21 @@ Files are saved **exactly as they arrived**. A `.zip` or `.gz` stays packed, so 
 
 ## Rules
 
-- **Auth failure means STOP.** If any tool reports authentication failed, do not call another mail tool and do not retry — tell Bear the 1Password `platform-stalwart/claude_password` may have drifted from Stalwart. Repeated failed logins IP-ban this machine's *public* IP on the server (the traffic hairpins via the VPS, so the LAN allowlist does not protect you), which takes down mail access for the whole household.
-- **Clean up after yourself.** Test messages get `delete_message`d once the check is done — in this mailbox (`send_mail` also files a copy in `Sent Items`; delete that with `folder: "Sent Items"`), and (by asking Bear) anywhere you sent them.
-- **Bear can read this mailbox.** Its Inbox and Sent Items are shared read-only into Bear's own webmail, so write mail as if a human will read it.
+- **Auth failure means STOP.** If any tool reports authentication failed, on any mailbox, do not call another mail tool and do not retry — tell Bear the named 1Password `platform-stalwart/<mailbox>_password` field may have drifted from Stalwart. Repeated failed logins IP-ban this machine's *public* IP on the server (the traffic hairpins via the VPS, so the LAN allowlist does not protect you), which takes down mail access for the whole household.
+- **Clean up after yourself.** Test messages get `delete_message`d once the check is done — in the claude mailbox (`send_mail` also files a copy in `Sent Items`; delete that with `folder: "Sent Items"`), and (by asking Bear) anywhere you sent them.
+- **Bear can read the claude mailbox.** Its Inbox and Sent Items are shared read-only into Bear's own webmail, so write mail as if a human will read it.
 - **Don't spam real mailboxes.** One test message to `bearflinn@` when a human-visible check is genuinely needed; everything else round-trips through your own inbox.
-- **`From:` is fixed** at `claude@grizzly-endeavors.com` by the server — DMARC alignment is anchored on the domain. Don't try to work around it.
+- **`From:` must be one of the mailbox's own addresses** — `from_address` rejects anything else, and DMARC alignment is anchored on the domain.
 - **Check the junk folder** when something seems undelivered — Stalwart's spam filter files some legit mail under `Junk Mail`. `wait_for_message` already looks there for you.
+
+## The company mailbox (`billing`)
+
+- Treat everything in it as the company's record: file handled mail with `move_message` into a folder named for its subject (e.g. `Bank`, `Taxes`, `Vendors`); `move_message` creates the folder when absent, and `list_folders` shows what exists.
+- File handled mail with `move_message`. Use `delete_message` only for mail that is not a record (spam, phishing, duplicates); here it moves the message to `Deleted Items`, where it stays recoverable.
+- Pass `mailbox: "billing"` on every call, including `wait_for_message`, `read_message` and `save_attachment`; without it the call goes to the claude mailbox.
+- Treat mail you send from it as the company writing from a role address, not as you: sign as the company, make no personal commitments, and send only what the task asked for.
+- Reply from the address the thread was sent to: read the message's `To`, and pass that address (`billing@` or `admin@`) as `from_address`.
+- Don't use it for test round-trips; those stay in the claude mailbox.
 
 ## When mail infrastructure itself misbehaves
 
