@@ -1,20 +1,21 @@
 #!/usr/bin/env bash
 # grizzly-mail MCP server launcher for the Claude Code plugin.
 #
-# Fetches the claude@grizzly-endeavors.com mailbox password from 1Password
-# (exactly once per server start — MCP servers live for a whole session, and
-# the 1P account budget is 1,000 requests/day shared across tokens), then
-# execs the stdlib-only Python server speaking newline-delimited JSON-RPC 2.0
-# over stdio. All diagnostics go to stderr; stdout is reserved for the
-# protocol.
+# Fetches each mailbox password from 1Password (exactly once per server start
+# — MCP servers live for a whole session, and the 1P account budget is 1,000
+# requests/day shared across tokens), then execs the stdlib-only Python server
+# speaking newline-delimited JSON-RPC 2.0 over stdio. The claude mailbox is
+# required; the billing (company) mailbox is optional and the server starts
+# without it if its password can't be read. All diagnostics go to stderr;
+# stdout is reserved for the protocol.
 #
-# Registered as the plugin's `mcpServers.mail` command. The password never
-# touches a command line or this script's output — it is passed to the server
+# Registered as the plugin's `mcpServers.mail` command. Passwords never touch
+# a command line or this script's output — they are passed to the server
 # through the process environment only.
 set -euo pipefail
 
 TOKEN_FILE="${GRIZZLY_MAIL_OP_TOKEN_FILE:-$HOME/.config/op-tokens/operator}"
-SECRET_REF="op://grizzly-platform/platform-stalwart/claude_password"
+SECRET_PREFIX="op://grizzly-platform/platform-stalwart"
 
 fail() {
   echo "grizzly-mail: $*" >&2
@@ -28,12 +29,27 @@ command -v python3 >/dev/null 2>&1 \
 [ -r "$TOKEN_FILE" ] \
   || fail "cannot read the 1Password service-account token at $TOKEN_FILE — this plugin only works on a machine holding the operator token."
 
-GRIZZLY_MAIL_PASSWORD="$(OP_SERVICE_ACCOUNT_TOKEN="$(cat "$TOKEN_FILE")" op read "$SECRET_REF")" \
-  || fail "could not read $SECRET_REF from 1Password (check the token at $TOKEN_FILE and the platform-stalwart item)."
+OP_SERVICE_ACCOUNT_TOKEN="$(cat "$TOKEN_FILE")"
+export OP_SERVICE_ACCOUNT_TOKEN
+
+GRIZZLY_MAIL_PASSWORD="$(op read "$SECRET_PREFIX/claude_password")" \
+  || fail "could not read $SECRET_PREFIX/claude_password from 1Password (check the token at $TOKEN_FILE and the platform-stalwart item)."
 [ -n "$GRIZZLY_MAIL_PASSWORD" ] \
   || fail "1Password returned an empty claude_password — refusing to start with a blank credential."
-
 export GRIZZLY_MAIL_PASSWORD
+
+# Optional company mailbox: one read, and any failure only costs that mailbox.
+if GRIZZLY_MAIL_BILLING_PASSWORD="$(op read "$SECRET_PREFIX/billing_password" 2>/dev/null)" \
+  && [ -n "$GRIZZLY_MAIL_BILLING_PASSWORD" ]; then
+  export GRIZZLY_MAIL_BILLING_PASSWORD
+else
+  unset GRIZZLY_MAIL_BILLING_PASSWORD
+  echo "grizzly-mail: billing_password unavailable ($SECRET_PREFIX/billing_password missing, empty or unreadable) — starting without the billing mailbox." >&2
+fi
+
+# The server never talks to 1Password; keep the token out of its environment.
+unset OP_SERVICE_ACCOUNT_TOKEN
+
 export GRIZZLY_MAIL_HOST="${GRIZZLY_MAIL_HOST:-mail.grizzly-endeavors.com}"
 export GRIZZLY_MAIL_USER="${GRIZZLY_MAIL_USER:-claude@grizzly-endeavors.com}"
 export GRIZZLY_MAIL_SMTP_PORT="${GRIZZLY_MAIL_SMTP_PORT:-465}"

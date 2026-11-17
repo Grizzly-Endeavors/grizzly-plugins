@@ -6,7 +6,7 @@ It ships six plugins so you only install what a given machine actually needs:
 
 - **`grizzly-tools`** — the general-purpose toolkit: reasoning lenses, debugging discipline, code craftsmanship, planning/process, LLM-content authoring, plus supporting agents and the `/clean` command. Useful on any project.
 - **`grizzly-misc`** — hyper-specific skills bound to a particular tool, engine, project, or environment. Only worth installing where that context applies.
-- **`grizzly-mail`** — an MCP server giving Claude its own mailbox (`claude@grizzly-endeavors.com`) for end-to-end mail testing. Only works on machines holding the 1Password operator token.
+- **`grizzly-mail`** — an MCP server giving Claude its own mailbox (`claude@grizzly-endeavors.com`) for end-to-end mail testing, plus the company mailbox (`billing@` / `admin@`) for reading, filing and answering company mail. Only works on machines holding the 1Password operator token.
 - **`grizzly-tasks`** — a skill for managing tasks in the self-hosted Vikunja from the terminal with the `vja` CLI, including first-time setup on a new machine. Only useful where a Vikunja API token can be set up.
 - **`grizzly-laya`** — a skill for adding the Laya local decision model to Python projects, with bundled calibrate and fine-tune scripts. Only useful where the project can run a local GPU model.
 - **`rust-build`** — Rust build speed for parallel agent worktrees: a cargo wrapper backed by a warm target-dir pool, plus worktree pruning hooks and two skills. Only useful on machines that build Rust. Its source lives in the rust-toolkit repo.
@@ -93,7 +93,7 @@ Context-specific skills — install only where the context applies.
 
 ## grizzly-mail
 
-An MCP server (single-file stdlib Python, no dependencies) bundling five tools — `send_mail`, `list_messages`, `read_message`, `delete_message`, `wait_for_message` — plus a skill carrying the usage conventions (self-round-trip testing, cleanup, the never-retry-auth rule). The launcher reads the mailbox password from 1Password once per session via the operator service-account token at `~/.config/op-tokens/operator`; see [grizzly-mail/README.md](grizzly-mail/README.md).
+An MCP server (single-file stdlib Python, no dependencies) bundling eight tools — `send_mail`, `list_messages`, `read_message`, `save_attachment`, `delete_message`, `move_message`, `list_folders`, `wait_for_message`, each taking an optional `mailbox` (`claude` by default, or `billing`) — plus a skill carrying the usage conventions (self-round-trip testing, cleanup, the company mailbox as a record, the never-retry-auth rule). The launcher reads each mailbox password from 1Password once per session (`billing` is optional) via the operator service-account token at `~/.config/op-tokens/operator`; see [grizzly-mail/README.md](grizzly-mail/README.md).
 
 ## grizzly-tasks
 

@@ -1,7 +1,7 @@
 {
   "name": "grizzly-mail",
-  "description": "Send and receive mail as claude@grizzly-endeavors.com via the self-hosted Stalwart server — an MCP server for end-to-end mail testing from Claude sessions. Requires the 1Password operator token on the machine.",
-  "version": "0.3.0",
+  "description": "Send and receive mail through the self-hosted Stalwart server as the agent mailbox (claude@grizzly-endeavors.com) or the company mailbox (billing@ / admin@grizzly-endeavors.com) — an MCP server for mail testing and for reading, filing and answering company mail from Claude sessions. Requires the 1Password operator token on the machine.",
+  "version": "0.4.0",
   "author": {
     "name": "Grizzly Endeavors",
     "email": "bearflinn@gmail.com"
