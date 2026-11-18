@@ -1,6 +1,6 @@
 # grizzly-mail
 
-An MCP server giving Claude Code access to two mailboxes on the self-hosted Stalwart mail server: its own test mailbox `claude@grizzly-endeavors.com`, built for end-to-end mail testing, and the company mailbox `billing@grizzly-endeavors.com` (which also receives `admin@`), for reading, filing and answering the company's bank, payment, government and vendor mail.
+An MCP server giving Claude Code access to three mailboxes on the self-hosted Stalwart mail server: its own test mailbox `claude@grizzly-endeavors.com`, built for end-to-end mail testing; the company mailbox `billing@grizzly-endeavors.com` (which also receives `admin@`), for reading, filing and answering the company's bank, payment, government and vendor mail; and Goalaxi's support mailbox `support@goalaxi.com`, for triaging support mail and answering the simple requests.
 
 ## Mailboxes
 
@@ -10,6 +10,9 @@ Every tool takes an optional `mailbox` argument; it defaults to `claude`, so exi
 |---|---|---|---|
 | `claude` | `claude@grizzly-endeavors.com` | `claude@` | `delete_message` expunges |
 | `billing` | `billing@grizzly-endeavors.com` | `billing@`, `admin@` | `delete_message` moves to `Deleted Items` (recoverable); use `move_message` to file handled mail |
+| `support` | `support@goalaxi.com` | `support@goalaxi.com` | As `billing` |
+
+The `claude` and `billing` passwords are the fields `claude_password` and `billing_password` on the 1Password item `platform-stalwart`; the `support` password is the `password` field on the item `goalaxi-support-mailbox`. `bin/grizzly-mail-mcp` holds the references.
 
 A call naming a mailbox whose password was not loaded returns an error naming the missing 1Password field.
 

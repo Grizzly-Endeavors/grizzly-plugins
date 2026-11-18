@@ -5,8 +5,8 @@
 # — MCP servers live for a whole session, and the 1P account budget is 1,000
 # requests/day shared across tokens), then execs the stdlib-only Python server
 # speaking newline-delimited JSON-RPC 2.0 over stdio. The claude mailbox is
-# required; the billing (company) mailbox is optional and the server starts
-# without it if its password can't be read. All diagnostics go to stderr;
+# required; the billing (company) and support (Goalaxi) mailboxes are optional
+# and the server starts without one whose password can't be read. All diagnostics go to stderr;
 # stdout is reserved for the protocol.
 #
 # Registered as the plugin's `mcpServers.mail` command. Passwords never touch
@@ -15,7 +15,15 @@
 set -euo pipefail
 
 TOKEN_FILE="${GRIZZLY_MAIL_OP_TOKEN_FILE:-$HOME/.config/op-tokens/operator}"
-SECRET_PREFIX="op://grizzly-platform/platform-stalwart"
+VAULT="op://grizzly-platform"
+
+# Where each mailbox's password lives (name = the key in the server's mailbox
+# table). The server gets the reference too, to name it in its error messages.
+declare -A SECRETS=(
+  [claude]="$VAULT/platform-stalwart/claude_password"
+  [billing]="$VAULT/platform-stalwart/billing_password"
+  [support]="$VAULT/goalaxi-support-mailbox/password"
+)
 
 fail() {
   echo "grizzly-mail: $*" >&2
@@ -32,23 +40,26 @@ command -v python3 >/dev/null 2>&1 \
 OP_SERVICE_ACCOUNT_TOKEN="$(cat "$TOKEN_FILE")"
 export OP_SERVICE_ACCOUNT_TOKEN
 
-GRIZZLY_MAIL_CLAUDE_PASSWORD="$(op read "$SECRET_PREFIX/claude_password")" \
-  || fail "could not read $SECRET_PREFIX/claude_password from 1Password (check the token at $TOKEN_FILE and the platform-stalwart item)."
+GRIZZLY_MAIL_CLAUDE_PASSWORD="$(op read "${SECRETS[claude]}")" \
+  || fail "could not read ${SECRETS[claude]} from 1Password (check the token at $TOKEN_FILE and the platform-stalwart item)."
 [ -n "$GRIZZLY_MAIL_CLAUDE_PASSWORD" ] \
   || fail "1Password returned an empty claude_password — refusing to start with a blank credential."
 export GRIZZLY_MAIL_CLAUDE_PASSWORD
 
-# Optional mailboxes (name = the key in the server's mailbox table): one read
-# each, and any failure only costs that mailbox.
-# shellcheck disable=SC2043  # one optional mailbox today; add names here
-for mb in billing; do
-  if val="$(op read "$SECRET_PREFIX/${mb}_password" 2>/dev/null)" && [ -n "$val" ]; then
+# The optional mailboxes: one read each, and any failure only costs that
+# mailbox.
+for mb in billing support; do
+  if val="$(op read "${SECRETS[$mb]}" 2>/dev/null)" && [ -n "$val" ]; then
     export "GRIZZLY_MAIL_${mb^^}_PASSWORD=$val"
   else
-    echo "grizzly-mail: ${mb}_password unavailable ($SECRET_PREFIX/${mb}_password missing, empty or unreadable) — starting without the $mb mailbox." >&2
+    echo "grizzly-mail: ${SECRETS[$mb]} is missing, empty or unreadable — starting without the $mb mailbox." >&2
   fi
 done
 unset val
+
+for mb in "${!SECRETS[@]}"; do
+  export "GRIZZLY_MAIL_${mb^^}_SECRET=${SECRETS[$mb]#op://}"
+done
 
 # The server never talks to 1Password; keep the token out of its environment.
 unset OP_SERVICE_ACCOUNT_TOKEN
