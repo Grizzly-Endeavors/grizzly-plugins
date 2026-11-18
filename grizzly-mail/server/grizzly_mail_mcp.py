@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""grizzly-mail MCP server: send/receive mail for the agent and company mailboxes.
+"""grizzly-mail MCP server: send/receive mail for the agent, company and support mailboxes.
 
 Stdlib-only. Speaks newline-delimited JSON-RPC 2.0 over stdio (initialize /
 tools/list / tools/call / ping); stdout carries the protocol, stderr carries
@@ -45,7 +45,7 @@ SMTP_PORT = int(os.environ["GRIZZLY_MAIL_SMTP_PORT"])
 IMAP_PORT = int(os.environ["GRIZZLY_MAIL_IMAP_PORT"])
 DOMAIN = USER.rsplit("@", 1)[1]
 
-SERVER_INFO = {"name": "grizzly-mail", "version": "0.4.0"}
+SERVER_INFO = {"name": "grizzly-mail", "version": "0.5.0"}
 FALLBACK_PROTOCOL = "2024-11-05"
 JUNK_FOLDER = "Junk Mail"
 SENT_FOLDER = "Sent Items"
@@ -53,11 +53,12 @@ DELETED_FOLDER = "Deleted Items"
 
 # The fixed mailbox table. `claude` is the agent's test mailbox and is always
 # loaded (the launcher refuses to start without it). `billing` is the company
-# mailbox (it also receives admin@); its password is optional, so it may be
-# absent. `records` mailboxes never expunge: delete_message moves to
-# DELETED_FOLDER instead. The key is the only place a mailbox is named: its
-# password arrives in GRIZZLY_MAIL_<KEY>_PASSWORD, read by the launcher from
-# the 1Password field platform-stalwart/<key>_password.
+# mailbox (it also receives admin@) and `support` is Goalaxi's support
+# mailbox; their passwords are optional, so either may be absent. `records`
+# mailboxes never expunge: delete_message moves to DELETED_FOLDER instead.
+# The launcher owns where each password lives: it passes the password in
+# GRIZZLY_MAIL_<KEY>_PASSWORD and the 1Password reference it read it from in
+# GRIZZLY_MAIL_<KEY>_SECRET, which the error messages name.
 MAILBOX_ROWS = {
     "claude": {
         "user": USER,
@@ -69,12 +70,17 @@ MAILBOX_ROWS = {
         "addresses": [f"billing@{DOMAIN}", f"admin@{DOMAIN}"],
         "records": True,
     },
+    "support": {
+        "user": "support@goalaxi.com",
+        "addresses": ["support@goalaxi.com"],
+        "records": True,
+    },
 }
 MAILBOXES = {
     key: {
         **row,
         "password": os.environ.get(f"GRIZZLY_MAIL_{key.upper()}_PASSWORD", ""),
-        "field": f"{key}_password",
+        "secret": os.environ.get(f"GRIZZLY_MAIL_{key.upper()}_SECRET", ""),
     }
     for key, row in MAILBOX_ROWS.items()
 }
@@ -103,7 +109,7 @@ ENCODING_TYPES = {
 def auth_error(mb):
     return (
         f"authentication failed for {mb['user']} — the password in 1Password "
-        f"(platform-stalwart/{mb['field']}) may not match Stalwart, or the "
+        f"({mb['secret']}) may not match Stalwart, or the "
         "account isn't provisioned. STOP: do not retry — repeated failures "
         "will IP-ban this machine's public IP on the mail server (recovery "
         "is a port-forward + delete BlockedIp, see grizzly-platform "
@@ -139,9 +145,9 @@ def get_mailbox(args):
     if not mb["password"]:
         raise ToolError(
             f"mailbox {name!r} is not available: its password was not loaded "
-            f"at server start (1Password field platform-stalwart/"
-            f"{mb['field']} was missing, empty, or unreadable). Provision the "
-            "field, then restart the MCP server. No login was attempted."
+            f"at server start (1Password field {mb['secret']} was missing, "
+            "empty, or unreadable). Provision the field, then restart the "
+            "MCP server. No login was attempted."
         )
     return name, mb
 
