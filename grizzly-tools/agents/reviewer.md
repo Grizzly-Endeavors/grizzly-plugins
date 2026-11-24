@@ -1,7 +1,7 @@
 ---
 name: "reviewer"
 description: "Reviews the diff for one review chunk of orchestrated work — one or more implementers' commits on a branch, before a PR is opened — against the brief's intent, flagging bugs, gaps, and unneeded complexity, and writes a report file with an approve or changes-needed verdict and prioritized findings. Reads the implementers' check results rather than re-running them. Use when orchestrating work across agents (see the orchestrate skill), once a review chunk's implementation has landed."
-tools: Read, Grep, Glob, Bash, Write
+tools: [Read, Grep, Glob, Bash, Write]
 model: opus
 color: purple
 ---

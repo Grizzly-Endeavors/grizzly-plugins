@@ -1,7 +1,7 @@
 ---
 name: "scout"
 description: "Answers an orchestrator's questions about a codebase — where things live, how they work, what conventions apply — and writes the findings to a report file another agent will read as context. Read-only on the repo. Use when orchestrating work across agents (see the orchestrate skill) to orient the orchestrator or to gather context ahead of an implementer or reviewer."
-tools: Read, Grep, Glob, Bash, Write
+tools: [Read, Grep, Glob, Bash, Write]
 model: haiku
 color: yellow
 ---

@@ -1,7 +1,7 @@
 ---
 name: "implementer"
 description: "Implements one clearly scoped chunk of work from an orchestrator's brief — a code change, a fix, or a merge-conflict resolution — in its own git worktree, runs the targeted checks for what it touched (or commits without building when its brief says a verifier will), commits, and writes a report file saying done, too big, or blocked. Use when orchestrating work across agents (see the orchestrate skill); launch one per implementation chunk, many in parallel."
-disallowedTools: Agent, Workflow, Monitor
+disallowedTools: [Agent, Workflow, Monitor]
 model: haiku
 isolation: worktree
 color: green
