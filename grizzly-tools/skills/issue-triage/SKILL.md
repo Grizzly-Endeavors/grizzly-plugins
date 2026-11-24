@@ -21,9 +21,9 @@ Treat each issue as an unverified claim. Assume the filer, person or agent, did 
 - **Clear-cut bug**: a concrete observed behavior that is wrong (an error, a crash, a visibly wrong result). The symptom is what to verify; the stated cause and fix are hypotheses.
 - **Everything else** (features, refactors, design proposals, vague complaints, bugs with no concrete symptom): write a draft need in one sentence, independent of the proposed solution: who is hurt, by what, in what situation. Example: "Move the inbox into one shared folder" becomes "agents can't see items other agents already filed, so they file duplicates." From here on, the issue's proposal is one candidate for meeting the need, not the plan.
 
-### 3. Gather facts with Explore agents
+### 3. Gather facts with parallel read-only exploration
 
-Launch one `Explore` agent (thoroughness "very thorough") per issue or group, all in one message so they run in parallel. Their job is to report what the code and docs contain, with `file:line` citations. They do not judge whether a claim is right or a proposal is good; you make those calls. Give each agent the issue text and ask it to report:
+Launch one read-only exploration subagent per issue or group in parallel (e.g. `Explore` in Claude Code or `research` in Antigravity). Their job is to report what the code and docs contain, with `file:line` citations. They do not judge whether a claim is right or a proposal is good; you make those calls. Give each agent the issue text and ask it to report:
 
 1. For each path, symbol, constant and behavior the issue mentions (list them as a numbered checklist): where it lives now and what the code there does.
 2. The code that handles the area the need is about: the existing mechanisms, helpers and modules that touch it, and how comparable features in the codebase are built.

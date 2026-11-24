@@ -37,7 +37,7 @@ Vary at least one axis from recent cycles. Revisiting an area is expected — ch
 
 ### 2. Scout
 
-Launch the scouts in parallel as read-only agents (Explore). Give each the assignment and the lens, not a checklist of specific things to confirm — the lens *is* the checklist, and a scout free to notice will find what a scripted one walks past.
+Launch the scouts in parallel as read-only exploration subagents (e.g. `Explore` in Claude Code or `research` in Antigravity). Give each the assignment and the lens, not a checklist of specific things to confirm — the lens *is* the checklist, and a scout free to notice will find what a scripted one walks past.
 
 When filling the templates below, substitute **absolute paths** to this skill's own lens and reference files (the directory this file lives in). Spawned agents start in the tended repo, where `examples/code.md` and `references/sweep.md` resolve to nothing — a scout whose lens fails to load will quietly survey from its own general taste, which is exactly the failure the lens exists to prevent. The scout template:
 
@@ -55,18 +55,14 @@ Hold each candidate against the disposition in `SKILL.md`: is the reader real, i
 
 > Tend one thing in this repo: `[finding, with file:line and why it matters]`. First read `[lens file path]`, especially the entry this finding falls under — it defines the target shape. Make the smallest change that fully addresses it, matching the module's local grain and preserving behavior exactly. Do NOT run tests, linting, or formatting checks. Do NOT commit. When done, report what you changed and why in two sentences.
 
-**Large findings** (a Sweep, Distill, or Gather candidate) → dispatch **now**, to an agent, not to a backlog. Do not defer it, do not park it in a report for the user to triage, do not shrink it into a nitpick-sized version of itself. Spawn a capable agent — a strong model, with `isolation: "worktree"` so it can't collide with fixers — and **launch it in the background** so scout cycles keep running while it works; a large item that blocks the orchestrator for its whole duration makes dispatching large work painful, and painful is how it slides back into deferred. Prompt it to read the matching mode reference (absolute path to `references/sweep.md`, `references/distill.md`, or `references/gather.md`) plus the relevant lenses, then plan and carry the change end-to-end in its worktree — committing incrementally there, one reviewable step per commit as the mode reference prescribes — and report the shape of what it did and where the worktree lives. One large item in flight at a time is plenty. If a second large candidate appears meanwhile, name it in your cycle report and dispatch it the moment the in-flight item is verified and merged — it is next, not optional.
+**Large findings** (a Sweep, Distill, or Gather candidate) → dispatch **now**, to an agent, not to a backlog. Do not defer it, do not park it in a report for the user to triage, do not shrink it into a nitpick-sized version of itself. Spawn a capable agent in an isolated worktree (e.g. `isolation: "worktree"` in Claude Code) running in the background so scout cycles keep moving while it works. Prompt it to read the matching mode reference (absolute path to `references/sweep.md`, `references/distill.md`, or `references/gather.md`) plus the relevant lenses, then plan and carry the change end-to-end in its worktree — committing incrementally there, one reviewable step per commit as the mode reference prescribes — and report the shape of what it did and where the worktree lives. One large item in flight at a time is plenty. If a second large candidate appears meanwhile, name it in your cycle report and dispatch it the moment the in-flight item is verified and merged — it is next, not optional.
 
 ### 5. Verify and commit — centrally
 
-Verification belongs to the orchestrator alone; that is why fixers are told not to run it. After fixers land: run the repo's format, lint, and test suite once over the combined result, and commit per unit of care with a one-sentence message. For a returned worktree: review its commits, run the same verification *in the worktree*, then bring it home yourself (merge or PR per the tended repo's convention). If verification fails, send the failure back to a fixer with the output — don't absorb the debugging into the orchestrator.
+Verification belongs to the orchestrator alone; that is why fixers are told not to run it. After fixers land, run only the narrow checks covering the files that changed (leaving full suites to the PR/CI gate per `lean-ci`), and commit per unit of care with a one-sentence message. For a returned worktree: review its commits, verify the affected scope *in the worktree*, then bring it home (merge or PR per the tended repo's convention). If verification fails, send the failure back to a fixer with the output — don't absorb the debugging into the orchestrator.
 
-The tended repo's own `CLAUDE.md` outranks this file on process — commit style, PR-vs-direct, branch policy. Follow it.
+The tended repo's own `AGENTS.md`/`CLAUDE.md` outranks this file on process — commit style, PR-vs-direct, branch policy. Follow it.
 
-### 6. Report and continue
+### 6. Report and stopping point
 
-One short paragraph per cycle: what was tended (with the *why*, not just the diff), what's in flight, what the next cycle will walk. Then schedule the next cycle. Pace to the work: short intervals while fixers or a large item are in flight; longer after quiet cycles.
-
-## Quiet Is Not Done
-
-A quiet cycle means those three assignments were quiet — respond by rotating to walks and lenses that haven't touched that ground recently, or to areas no scout has visited. After several consecutive quiet cycles across genuinely varied assignments, lengthen the interval and say so plainly. But the garden is never declared finished, and the loop is never ended on your own judgment that there's nothing left: that judgment has been wrong every time it's been tested. The loop ends when the user ends it.
+One short paragraph per cycle: what was tended (with the *why*, not just the diff), what's in flight, what the next cycle will walk. After two consecutive quiet cycles across genuinely varied areas, lenses, and walks (and once any in-flight large item lands), summarize what shipped and stop rather than burning cycles indefinitely.

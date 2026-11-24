@@ -36,19 +36,19 @@ Make every wait end on the event it waits for. A longer guess only moves the fai
 
 4. **When nothing observable marks the event, add the signal to the code under test**: a `data-` attribute set once an animation or placement settles, a status field, a ready or done event, a mock control.
 
-5. **Prove it under load before you push**, for each test you added or changed that involves time, async work, I/O, processes or a browser. Run the project's stress recipe (`just <app> stress`, `just stress <filter>`, or whatever `just --list` or the docs name); every repeat must pass. With no recipe, run the test 5 times under load and require 5 passes:
+5. **Prove timing-sensitive fixes under load.** When fixing a flaky test, or when running a scheduled/explicit stress pass on tests that involve time, async work, I/O, processes or a browser, run the project's stress recipe (`just <app> stress`, `just stress <filter>`, or whatever `just --list` or the docs name); every repeat must pass. With no recipe, run the test 5 times under load and require 5 passes:
    - **Playwright:** `--repeat-each=5 --workers=2`, with CDP `Emulation.setCPUThrottlingRate` at 4 set in a temporary fixture (Chromium only).
    - **Anything else:** beside a bounded burner that leaves half the cores free, `stress-ng --cpu $(( $(nproc) / 2 )) --timeout 5m`. Confirm no burner is left running afterwards.
    - **Reading a failure:** one that shows only under load means the test assumes timing or ordering, so find the assumption. A port or temp-file collision between parallel runs is a bug too: fix it.
 
-6. **Scan your diff before committing.** Run the project's wait scan if it has one (goalaxi: `just <app> check-waits`). Otherwise grep the lines you added (`git diff -U0 | grep '^+'`) for `sleep`, `waitForTimeout`, `setTimeout(` with a delay, `.slow(`, `timeout:` and `retries`. Replace each hit with a wait from step 1, unless it's the project's own hang guard or a fake-timer advance.
+6. **Scan your diff before committing.** Run the project's wait scan if it has one. Otherwise grep the lines you added (`git diff -U0 | grep '^+'`) for `sleep`, `waitForTimeout`, `setTimeout(` with a delay, `.slow(`, `timeout:` and `retries`. Replace each hit with a wait from step 1, unless it's the project's own hang guard or a fake-timer advance.
 
 ## Fixing a flaky or failing test
 
 1. **Reproduce it under load** (step 5 above) instead of rerunning it until it passes. If it doesn't fail under load, you haven't found the guess yet: read for the step that assumes something has happened by now, and raise the repeat count.
 2. **Make that step wait on the event** (step 1), adding the signal when there is none (step 4). If the test needs a moment held open, hold it. Don't add a sleep, a longer timeout, `test.slow()`, a retry or a skip.
 3. **Prove the fix** with the same stress run, all repeats passing, and say in the commit what the test now waits on.
-4. **A failure in code your change didn't touch is still yours:** fix it, or file an `investigate` issue with the full output.
+4. **For a failure in code your change didn't touch:** record it (file an `investigate` issue with the output if not already tracked) and carry on rather than blocking unrelated work on it.
 
 ## Test runner settings and wait scans
 

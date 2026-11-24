@@ -25,7 +25,7 @@ Before adding or changing anything, build a table with one row per check (format
 - Remote CI (`.github/workflows/`, `.gitlab-ci.yml`, etc.) for PR, push to main, merge queue, tag, deploy and schedule triggers.
 - Deploy pipelines and scripts (Flux, Argo, Dockerfiles that run tests in a build stage).
 - Agent instructions: `CLAUDE.md` and `AGENTS.md` at every level, project skills and commands (`.claude/skills/`, `.claude/commands/`), agent definitions, and plugin skills the project's agents load. Search them for `test`, `lint`, `check`, `ci`, `build`, `clippy`, `tsc`, `just`, `npm run`.
-- Claude Code hooks in `.claude/settings.json` and `settings.local.json` (a `PostToolUse` hook that runs tests after every edit counts as a stage).
+- Agent edit hooks (e.g. Claude Code `PostToolUse` hooks in `.claude/settings.json` — a hook running tests after every edit counts as a stage).
 - Orchestration workflows where an implementer, a verifier and a reviewer each run the suite.
 
 Mark each cell with what it runs on: staged files, the affected projects, or everything.
@@ -36,7 +36,7 @@ Each check blocks at exactly one stage: the earliest one where its input exists 
 
 | Stage | Runs | Budget |
 |---|---|---|
-| Claude Code edit hooks | At most a formatter or linter on the edited file | About a second |
+| Agent edit hooks | At most a formatter or linter on the edited file | About a second |
 | Agent iterating | The narrowest test for the code being changed (one file, one test name, one crate) | Seconds |
 | Pre-commit | Lint and secret scan on the staged files; typecheck of the projects they belong to if it fits the budget, else at the gate. Formatters fix and re-stage only through a tool that stashes unstaged changes first (lint-staged, pre-commit); otherwise fail and print the fix command | Under ~15 s |
 | The gate: PR when the repo has remote CI with a required status check, otherwise pre-push, never both | The tests and builds of the projects the change affects, plus the projects that depend on them | A few minutes |
@@ -69,22 +69,23 @@ Block on a failure when all three hold:
 Don't block on these. Send each one somewhere it gets acted on instead:
 
 - **Network, third-party services, or shared-machine timing** (external link checks, registry lookups, perf budgets and scores measured on a busy machine): move it to a scheduled run that files or updates an issue when it fails.
-- **Failures in code the change didn't touch:** call a failure pre-existing only after reproducing it on the base commit. Then fix it, or file an `investigate` issue with the full output, and scope the check to the change.
+- **Failures in code the change didn't touch:** don't spend another full run reproducing them on the base commit — record the failure (file an `investigate` issue with the output if not already tracked), scope the check to the change when feasible, and carry on.
 - **Advisory output** (dependency updates, complexity metrics): report it in a scheduled run.
 
-A test that fails intermittently is a broken test, not a non-blocking one. It blocks until it's fixed with test-reliability. Never retry, skip or reclassify it.
+A flaky test in the code you changed is a defect to fix with `test-reliability` (never mask it with retries or sleeps). A pre-existing intermittent flake in untouched code should be filed as an issue rather than holding up unrelated changes indefinitely.
 
 A change that adds or tightens a rule fixes every existing violation in the same change, so scoping lint to staged files never hides old violations of a new rule.
 
 Agents ignore warnings, so warnings that print and pass aren't a third option. Every check either blocks or routes its findings to an issue or report someone reads.
 
-Removing a duplicate run of a check on the same input needs no approval. Moving a check off its blocking stage, or deleting a check, relaxes the project's guardrails: propose it with the numbers from §6 and wait for the user's answer.
+**Treat adding and removing recurring check cost symmetrically.** Removing a duplicate run on the same input needs no approval. Adding a new recurring check — or deleting / moving an existing blocking check off the critical path — both change the project's cost/safety tradeoff and should be justified by how often the defect occurs and what it costs if it slips through.
 
 ## 5. Keep the machine usable and the output complete
 
 - Build once and reuse the output across the checks that need it (e2e and perf on the same production build).
-- Run builds one at a time rather than several at once, and size test workers per test-reliability's runner settings.
-- Run every selected check to the end, even after one fails, then print a summary of each check's result, so one push shows every failure.
+- Run builds one at a time rather than several at once, and size test workers per `test-reliability`'s runner settings.
+- Write full gate output to a log file and print the path so agents never re-run a slow gate just to read truncated output.
+- Fail fast when a cheap check fails before starting an expensive downstream check on a tree that is about to change.
 
 ### Hook correctness
 
@@ -92,13 +93,11 @@ Removing a duplicate run of a check on the same input needs no approval. Moving 
 - Install hooks as small dispatchers that run `$(git rev-parse --show-toplevel)/<hook source dir>/<hook>`. The hooks directory is shared by every worktree, so a symlink would run one checkout's copy.
 - Judge the commit being pushed: refuse when the pushed sha isn't HEAD or tracked files have uncommitted changes, or check the pushed commit out in a temporary `git worktree`.
 
-## 6. Prove the setup
+## 6. Spot-check the setup
 
-After building or changing checks, measure them and put the numbers in the PR:
+After changing hooks or CI, confirm the invariants that matter most without turning verification into a multi-hour ritual:
 
-1. **Time three changes end to end**, from commit to the gate passing: a docs-only change, a one-file change in a leaf project, and a change to a shared dependency. The docs-only change must run no test suite and finish in seconds. The leaf change must not run other projects' suites.
-2. **Time pre-commit on a typical commit** against its ~15 s budget, and confirm the machine stays responsive (a browser and editor still usable) while the gate runs.
-3. **Count runs per check** for one change from commit to deploy, including what the agent instructions tell agents to run. Any check that runs twice on the same input is a finding to fix.
-4. **Touch a path the mapping doesn't know** and confirm every check runs.
-5. **Make one check fail on purpose** and confirm the others still run and the summary names the failure.
-6. **Run the hooks from a linked worktree** and confirm a nested `git log` shows that worktree's history.
+1. A docs-only change runs no test suite and finishes in seconds; a leaf change does not run unrelated suites.
+2. Pre-commit stays within its ~15 s budget and leaves the machine responsive.
+3. No check runs twice on the same input across commit, push, CI, and agent instructions.
+4. Hooks invoked from a linked worktree resolve that worktree's repo and history cleanly.
