@@ -1,6 +1,6 @@
 # Calibrating and fine-tuning Laya
 
-Both scripts live in `<skill-dir>/scripts/` (`<skill-dir>` is the "Base directory for this skill" path printed when the skill loaded) and carry pinned inline dependencies, so `uv run <script>` works from anywhere. They need `laya_load.py` beside them; run them in place rather than copying them.
+Both scripts live in `<skill-dir>/scripts/` (`<skill-dir>` is the directory containing `SKILL.md`) and carry pinned inline dependencies, so `uv run <script>` works from anywhere. They need `laya_load.py` beside them; run them in place rather than copying them.
 
 ## Labeled data (JSONL)
 
