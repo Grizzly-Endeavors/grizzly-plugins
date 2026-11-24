@@ -1,79 +1,55 @@
-# Workbench — first-time setup
+# Workbench — First-Time Setup
 
-Read this when `~/workbench/` doesn't exist and the user needs the workbench set up.
-Complete all steps in order, then return to tool authoring.
+Read this when `~/workbench/` does not exist yet. Complete these steps in order, then return to tool authoring.
 
-## Steps
+## 1. Run the setup script
 
-### 1. Run the setup script
+Run `assets/setup.sh` from the directory containing this `SETUP.md` (`<skill-dir>`):
 
 ```bash
-bash ~/.claude/skills/workbench/assets/setup.sh
+bash <skill-dir>/assets/setup.sh
 ```
 
-This script:
-- Creates `~/workbench/tools/` and `~/workbench/logs/`
-- Copies `server.py` and `home.html` to `~/workbench/`
-- Copies `welcome.html` to `~/workbench/tools/`
-- If run interactively on macOS, offers to set up launchd auto-start
+This creates `~/workbench/tools/` and `~/workbench/logs/`, copies `server.py` and `home.html` to `~/workbench/`, copies `welcome.html` to `~/workbench/tools/`, and on macOS interactively offers `launchd` auto-start.
 
-### 2. Start the server (if launchd wasn't set up)
+## 2. Start the server (auto-start on login)
 
-**Foreground:**
+### Linux (`systemd --user`)
+
+Create `~/.config/systemd/user/workbench.service`:
+
+```ini
+[Unit]
+Description=Personal Workbench HTTP Server
+
+[Service]
+ExecStart=/usr/bin/python3 %h/workbench/server.py
+WorkingDirectory=%h/workbench
+Environment=WORKBENCH_HOST=127.0.0.1
+Environment=WORKBENCH_PORT=8765
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+```
+
+Then enable and start it:
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now workbench.service
+```
+
+### macOS (`launchd`)
+
+If `setup.sh` did not already set it up, write `~/Library/LaunchAgents/com.workbench.plist` pointing `/usr/bin/python3` at `$HOME/workbench/server.py` with `WORKBENCH_HOST=127.0.0.1` and `WORKBENCH_PORT=8765`, then run `launchctl load` and `launchctl start com.workbench`.
+
+### Ad-hoc / foreground
+
 ```bash
 python3 ~/workbench/server.py
 ```
 
-**Background:**
-```bash
-python3 ~/workbench/server.py &
-```
+## 3. Verify
 
-**macOS launchd (auto-start on login) — if not already done by the script:**
-
-Run `echo $HOME` to get the absolute home path, then write a plist to
-`~/Library/LaunchAgents/com.workbench.plist` — replace `YOUR_HOME` with that path:
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key>            <string>com.workbench</string>
-  <key>ProgramArguments</key>
-  <array>
-    <string>/usr/bin/python3</string>
-    <string>YOUR_HOME/workbench/server.py</string>
-  </array>
-  <key>WorkingDirectory</key> <string>YOUR_HOME/workbench</string>
-  <key>RunAtLoad</key>        <true/>
-  <key>KeepAlive</key>        <true/>
-  <key>StandardOutPath</key>  <string>YOUR_HOME/workbench/logs/workbench.out.log</string>
-  <key>StandardErrorPath</key><string>YOUR_HOME/workbench/logs/workbench.err.log</string>
-  <key>EnvironmentVariables</key>
-  <dict>
-    <key>WORKBENCH_HOST</key> <string>127.0.0.1</string>
-    <key>WORKBENCH_PORT</key> <string>8765</string>
-  </dict>
-</dict>
-</plist>
-```
-
-Then load and start it:
-```bash
-launchctl load ~/Library/LaunchAgents/com.workbench.plist
-launchctl start com.workbench
-```
-
-### 3. Verify
-
-Ask the user to open **http://localhost:8765** — they should see the workbench home page with
-the "Welcome to workbench" tool listed.
-
-If the page doesn't load, check `ps aux | grep server.py` and that port 8765 is free.
-
-### 4. Tell the user
-
-Workbench is ready. Tools go in `~/workbench/tools/`. Access at http://localhost:8765.
-Now continue with whatever tool was originally requested.
+Confirm `http://localhost:8765` responds (e.g. `curl -sf http://127.0.0.1:8765/ >/dev/null`), tell the user the workbench is ready, and continue with the requested tool.

@@ -11,16 +11,9 @@
     {
       "name": "grizzly-tools",
       "source": "./grizzly-tools",
-      "description": "General-purpose toolkit useful on any project: reasoning lenses, debugging discipline, code craftsmanship, planning/process, and LLM-content authoring — plus supporting agents and commands.",
+      "description": "General-purpose toolkit useful on any project: reasoning lenses, debugging discipline, code craftsmanship, test and CI discipline, planning/process, and LLM-content authoring — plus supporting agents.",
       "category": "workflow",
-      "tags": ["skills", "agents", "reasoning", "debugging", "code-quality", "writing", "planning"]
-    },
-    {
-      "name": "grizzly-misc",
-      "source": "./grizzly-misc",
-      "description": "Hyper-specific skills bound to a particular tool, engine, project, or environment: Bevy UI, PinchTab browser automation, Jules delegation, Residuum brand, and homelab deploys. Install only where relevant.",
-      "category": "workflow",
-      "tags": ["skills", "bevy", "browser-automation", "delegation", "homelab", "brand"]
+      "tags": ["skills", "agents", "reasoning", "debugging", "code-quality", "testing", "planning"]
     },
     {
       "name": "grizzly-mail",

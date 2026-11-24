@@ -22,7 +22,7 @@ A call naming a mailbox whose password was not loaded returns an error naming th
 /plugin install grizzly-mail@grizzly-plugins
 ```
 
-**Prerequisite:** the machine must hold the 1Password operator service-account token at `~/.config/op-tokens/operator` (override with `GRIZZLY_MAIL_OP_TOKEN_FILE`) and have the `op` CLI installed. The launcher reads `op://grizzly-platform/platform-stalwart/claude_password` and `.../billing_password` once each per session. `claude_password` is required: without it (or the token) the server refuses to start with a clear error. `billing_password` is optional: if it is missing, empty or unreadable the launcher writes one line to stderr and starts with only the `claude` mailbox. This plugin is only useful on Grizzly Endeavors machines.
+**Prerequisite:** the machine must hold the 1Password operator service-account token at `~/.config/op-tokens/operator` (override with `GRIZZLY_MAIL_OP_TOKEN_FILE`) and have the `op` CLI installed. The launcher reads `op://grizzly-platform/platform-stalwart/claude_password` (required), `.../billing_password` (optional), and `op://grizzly-platform/goalaxi-support-mailbox/password` (optional) once each per session. Without `claude_password` (or the token) the server refuses to start with a clear error; if either optional password is missing or unreadable, the launcher logs one line to stderr and starts without that mailbox. This plugin is only useful on Grizzly Endeavors machines.
 
 ## Tools
 

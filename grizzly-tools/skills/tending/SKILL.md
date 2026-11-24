@@ -1,22 +1,7 @@
 ---
 name: tending
-description: >
-  Four modes for making a codebase feel cared-for, loved, and actively
-  maintained — qualities that live in the code itself (beyond "clean") and
-  extend to the people and agents who use and work on it. Use whenever the user
-  wants to give a project attention: tend small rough edges (Rounds), carry one
-  well-defined change across many files like a rename or module reorg (Sweep),
-  refactor a system that outgrew its shape (Distill), or consolidate scattered
-  logic into one home (Gather). Also covers care for the end user's experience
-  (UI, CLI, API, docs) and for AI agents in the repo (agent files like
-  CLAUDE.md, in-repo indexes, MCP/tool output). Trigger on phrases like "make
-  this feel maintained", "give this some love", "tend to this", "rename this
-  everywhere", "reorganize these modules", "distill this down", "clean up our
-  CLAUDE.md", or "clean this up" in the caring rather than cosmetic sense — or
-  when you notice a codebase would benefit and want to offer it. Also runs
-  unattended (Garden): when invoked under /loop, on a schedule, or with phrases
-  like "keep tending", "tend continuously", or "let it run", orchestrate scout
-  and fixer agents instead of walking the code yourself. Any language or stack.
+description: Five modes (Rounds, Sweep, Distill, Gather, and unattended Garden) for making a codebase feel cared-for, loved, and actively maintained across code, user interfaces/docs, and AI agent files. User-invoked ("/tending", "tend to this", "give this some love").
+disable-model-invocation: true
 ---
 
 # Tending
@@ -27,7 +12,7 @@ Loved code looks *lived in* rather than pristine. Pristine often just means unto
 
 Two kinds of evidence give it away. Someone imagined a reader who wasn't them. And the thing has been run hard enough to hurt, and then returned to.
 
-This skill is a way to be that someone, and to do the returning on purpose. Not a linter pass, not a rewrite, not cleanup for the sake of a tidier diff. Attention. The four modes below are shapes that attention can take, depending on what the code in front of you actually needs.
+This skill is a way to be that someone, and to do the returning on purpose. Not a linter pass, not a rewrite, not cleanup for the sake of a tidier diff. Attention. The modes below are shapes that attention can take, depending on what the code in front of you actually needs.
 
 ## What Cared-For Looks Like
 

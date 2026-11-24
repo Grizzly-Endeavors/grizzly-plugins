@@ -10,7 +10,7 @@ Laya takes a **state** (string or JSON) plus typed **questions** and returns per
 ## Add it to a project
 
 1. Add pinned dependencies: `laya==0.3.4 torch==2.14.0 transformers==5.17.0 huggingface-hub==1.32.0 safetensors==0.8.0 numpy==2.5.3`. Re-check these against PyPI before pinning. If you bump `laya`, re-read `scripts/laya_load.py` against the new package, because `raw_logits` uses `laya.common` internals.
-2. Copy `<skill-dir>/scripts/laya_load.py` into the project. `<skill-dir>` means the "Base directory for this skill" path printed when this skill loaded. It pins the HF repo revision, which `laya.load()` alone cannot do.
+2. Copy `<skill-dir>/scripts/laya_load.py` into the project (`<skill-dir>` is the directory containing this `SKILL.md`). It pins the HF repo revision, which `laya.load()` alone cannot do.
 3. Load once per process and reuse the agent:
 
 ```python
