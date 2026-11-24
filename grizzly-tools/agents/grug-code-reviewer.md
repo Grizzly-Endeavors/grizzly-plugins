@@ -1,7 +1,7 @@
 ---
 name: "grug-code-reviewer"
 description: "Use this agent to review diffs, PRs, or modules through the anti-complexity lens of The Grug Brained Developer (grugbrain.dev) — flagging premature abstraction, speculative flexibility, over-mocked tests, scattered behavior, and unnecessary machinery."
-tools: Read, Grep, Glob, Bash
+tools: [Read, Grep, Glob, Bash]
 model: sonnet
 color: green
 ---

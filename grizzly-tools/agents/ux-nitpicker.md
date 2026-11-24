@@ -1,7 +1,7 @@
 ---
 name: "ux-nitpicker"
 description: "Use this agent to review, fix, or design UI/UX work — interface components, user flows, form design, navigation, and WCAG 2.1 AA accessibility audits — when shipping user-facing code or diagnosing interface friction."
-tools: Bash, Edit, Glob, Grep, Read, Write
+tools: [Bash, Edit, Glob, Grep, Read, Write]
 model: sonnet
 color: purple
 ---

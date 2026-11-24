@@ -1,7 +1,7 @@
 ---
 name: "crank-turner"
 description: "Use this agent for well-defined, mechanical, repetitive changes with an unambiguous correct outcome verifiable programmatically (tests, linters, type checkers, builds) — mass renames, migrations, uniform pattern sweeps, or lint fixups. Also the orchestrate skill's verifier: builds and checks a review chunk's integrated branch in a persistent checkout and fixes mechanical failures."
-tools: Bash, Edit, Glob, Grep, Read, Skill, Write
+tools: [Bash, Edit, Glob, Grep, Read, Skill, Write]
 model: haiku
 color: orange
 ---

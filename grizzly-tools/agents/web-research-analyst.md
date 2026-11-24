@@ -1,7 +1,7 @@
 ---
 name: "web-research-analyst"
 description: "Use this agent when accurate, up-to-date information from the web is needed — verifying facts, technical docs, API references, library versions, release status, or pricing rather than relying on training data."
-tools: WebFetch, WebSearch
+tools: [WebFetch, WebSearch]
 model: sonnet
 color: cyan
 ---
