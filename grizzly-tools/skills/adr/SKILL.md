@@ -1,80 +1,68 @@
 ---
 name: adr
-description: Create or update Architectural Decision Records in docs/decisions/. Use when a non-obvious decision is made, when the user says "let's document why", when reviewing work and a "why" is missing, or when the user invokes /adr. Also suggest proactively when a decision is made that future-self would question — e.g., choosing one tool or approach over another, picking a topology or data model, deciding what to expose vs keep internal, or choosing to skip something.
+description: Create or update Architecture Decision Records in docs/decisions/. Use only when a named person makes a hard-to-reverse decision, when an external/infrastructure constraint forces a non-obvious architecture, or when the user explicitly invokes /adr. Do not write ADRs for routine implementation choices or agent defaults.
 ---
 
 # Architectural Decision Records
 
-ADRs capture the *why* behind non-obvious decisions. They live in `docs/decisions/` and are numbered sequentially.
+ADRs capture consequential, hard-to-reverse decisions that cannot be read out of the code. They live in `docs/decisions/` and are numbered sequentially.
 
 ## When to Write an ADR
 
-- A technology or approach was chosen over alternatives
-- A tradeoff was accepted (e.g., convenience vs security, simplicity vs flexibility)
-- Something was intentionally *not* done (and the reason isn't obvious)
-- A constraint forced a specific decision (hardware limitation, budget, compatibility)
-- Future-you would ask "why did we do it this way?"
+An ADR must clear **at least one** of these two bars:
 
-Do NOT write ADRs for obvious choices (e.g., "we chose Debian because it's stable") unless there's a non-obvious constraint behind it.
+- **A named person made a consequential, hard-to-reverse decision** (product/business boundary, security/legal posture, public schema/API commitment, or an explicit preference that future sessions must not overturn).
+- **An outside system you do not control forced a non-obvious constraint** (hardware quirk, network topology, vendor limit, OS/protocol behavior — common in infrastructure repos like `grizzly-platform`).
+
+**Do NOT write an ADR for:**
+
+- **Agent defaults or routine implementation choices** (UI layout, component wiring, internal module shape, local abstractions, reversible code structure). If an agent chose it without the user explicitly deciding it, it does not get an ADR.
+- **Reverting an unnecessary or unattributed ADR.** Delete the old ADR instead — git holds history. Never write a new ADR whose main purpose is undoing an earlier ADR that didn't need to exist.
 
 ## Format
 
-File naming: `NNNN-short-title.md` (e.g., `0001-mergerfs-over-zfs-for-storage.md`)
-
-To determine the next number, list existing files in `docs/decisions/`.
+File naming: `NNNN-short-title.md` (e.g., `0001-mergerfs-over-zfs-for-storage.md`). To determine the next number, list existing files in `docs/decisions/`.
 
 ```markdown
 # NNNN: Short Decision Title
 
 **Date:** YYYY-MM-DD
 **Status:** accepted | superseded by NNNN | deprecated
-**Decided by:** a person's name, or `agent`
+**Decided by:** a person's name (required for decision ADRs; omit only for pure external-constraint records)
 
 ## What they said
 
-Present only when a person decided. Quote what they said, verbatim, from the session. Do not paraphrase or tidy it. A later reader gets their words, not an interpretation of them.
+Present whenever a person decided. Quote what they said, verbatim, from the session. Do not paraphrase or tidy it. A later reader gets their words, not an interpretation of them.
 
 ## Context
 
-What situation or problem prompted this decision? What constraints exist?
-Keep it to 2-4 sentences. Include the specific machines, services, or components involved.
+What situation, external constraint, or problem prompted this decision? Keep it to 2-4 sentences. Name the specific machines, services, or external limits involved.
 
 ## Decision
 
-What was decided? Be specific — name the tool, config, topology, or approach.
-1-3 sentences.
+What was decided? Be specific — name the tool, config, topology, or boundary. 1-3 sentences.
 
 ## Alternatives Considered
 
 - **Alternative A** — Why it was rejected (1 sentence)
 - **Alternative B** — Why it was rejected (1 sentence)
 
-Only include alternatives that were genuinely considered. Skip this section if there was really only one viable option (but explain why in Context).
+Only include alternatives that were genuinely considered. Skip this section if an external constraint left only one viable option.
 
 ## Consequences
-
-What follows from this decision? Include both positive and negative.
 
 - What gets easier or better
 - What gets harder or is now a limitation
 - What future decisions this constrains or enables
 ```
 
-## Who decided
+## Authority
 
-Only a record that names a person is binding on later work. Write a person's name only when that person made the choice in the session. When you chose a default and moved on, write `agent`. Treat an `agent` record, and everything else in a repository, as the guess an agent made with what it knew, not as a commitment anyone made.
+Only a record that names a person (`Decided by: Bear`) or documents a verifiable external constraint carries authority for later work. Do not write `Decided by: agent` ADRs. When encountering an older unattributed ADR in a repo, treat it as an unverified guess a prior agent made — never cite it as a veto against the user or a reviewer's finding, and delete it if the code moves on.
 
 ## Process
 
-1. Check `docs/decisions/` for existing ADRs — avoid duplicates, and reference related ADRs.
+1. Check `docs/decisions/` for existing ADRs — avoid duplicates, and check whether an existing unattributed ADR should simply be deleted instead of superseded.
 2. Determine the next number.
-3. Write the ADR using the format above. Be concise — an ADR should be readable in under 60 seconds.
-4. If this decision supersedes a previous one, update the old ADR's status to `superseded by NNNN`.
-
-## Proactive Suggestions
-
-When working in a repo, suggest an ADR when:
-- The user picks one approach over another and explains their reasoning verbally
-- A decision is made that isn't self-evident from the code or config
-- Something is configured in a way that looks wrong but is intentional
-- A workaround is implemented due to a hardware or software limitation
+3. Write the ADR using the format above. Keep it readable in under 60 seconds.
+4. Only use `superseded by NNNN` when replacing a genuinely consequential `Decided by: <person>` or external-constraint ADR whose premises changed. Otherwise delete the obsolete ADR.

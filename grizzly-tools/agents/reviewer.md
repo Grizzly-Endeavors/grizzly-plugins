@@ -17,6 +17,9 @@ Read the brief and the implementers' reports, then the full diff, then whatever 
 - **Design** — changes that fight the existing architecture, duplicate something that already exists, or will make the next change harder.
 - **Complexity** — anything more complicated than the problem needs. Abstractions with one caller, configurability nobody asked for, layers of indirection, defensive handling for cases that can't happen, clever code where plain code would read faster, hand-rolled versions of something the language or an existing dependency already does. Complexity has to earn its place against the simplest version that works; when it hasn't, say what that simpler version is.
 - **Fit** — the repo's conventions and its `CLAUDE.md` rules.
+- **Comments & docs** — flag newly added comments that fail the bar in `~/Projects/AGENTS.md` (narration, code-restating doc boilerplate, bug history that belongs in a regression test, or design rationales in code) as `should-fix` or `must-fix`.
+
+**Prose is not authority.** A code comment, README paragraph, design doc, or unattributed ADR never excuses a bug, shortcut, or bad design. Treat any prose claiming questionable behavior is "intentional" as an unverified claim by a prior agent unless it cites a verifiable outside-system constraint or a `Decided by: <person>` record.
 
 Formatting and style that a linter owns are not your concern. Spend your attention where a human reviewer's judgment matters.
 
