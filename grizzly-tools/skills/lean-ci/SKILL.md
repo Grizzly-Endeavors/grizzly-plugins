@@ -15,7 +15,29 @@ description: >
 
 # Lean CI
 
-A check earns its CPU time by catching a defect the change could have introduced, at the earliest stage where it can. Every other run of it is waste. Build the setup so a one-line docs change lands in seconds and a code change runs each relevant check once.
+A check earns its wait and machine time by catching a defect the change could have introduced, at the earliest stage where it can. Every other run of it is waste. Build the setup so a one-line docs change lands in seconds and a code change runs each relevant check once.
+
+Every check run is judged by one tradeoff:
+
+```
+score = (unchecked change × issue rate × damage × in time) − (wait time + machine time)
+```
+
+- **Unchecked change:** lines the check can see that it hasn't already passed on.
+- **Issue rate:** real defects this kind of check finds per line it sees.
+- **Damage & in time:** minutes of waiting worth trading to stop one defect reaching users, and whether the check catches it in time (1 if it blocks release or runs within the level's tolerance window, else 0):
+
+| Level | Worst outcome if a defect slips through | Worth | Tolerance |
+|---|---|---|---|
+| 0 | Cosmetic or internal only (docs, tests, tooling) | <1 min | Blocking only |
+| 1 | Visible glitch, nothing lost | 5 min | 3 days |
+| 2 | Users blocked until fixed | 1 hour | Must block release |
+| 3 | Costs real money or users | 1 day | Must block release |
+| 4 | Irreversible (lost data, wrong charges, leaked secrets) | 1 week | Must block release |
+
+- **Wait time + machine time:** wall-clock minutes anything waits on the result, plus core-minutes divided by machine cores (including follow-on work thrown away when a cheap check fails after expensive work started).
+
+Running a 10-minute suite on a 3-line or docs-only change, or repeating a check on content it already passed on, is negative score — waste.
 
 ## 1. Inventory every place a check runs
 
