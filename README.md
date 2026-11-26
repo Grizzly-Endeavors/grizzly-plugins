@@ -40,6 +40,7 @@ Update later with `/plugin marketplace update grizzly-plugins`.
 - **test-reliability** — patterns for making tests wait on real events instead of sleeps, raised timeouts, or retries, plus load-stress recipes for fixing flakes.
 - **test-audit** — audits unit and integration tests for real behavioral signal vs fragile or over-mocked tests; user-invoked.
 - **lean-ci** — designs and audits hooks, gates, CI pipelines, and agent check instructions so each check runs once at the earliest stage where it matters.
+- **ci-audit** — deep empirical audit of a repo's CI, hooks, check scripts, test suites, and agent check instructions against `lean-ci`, sorting checks into delete/demote/critical/scheduled and producing a speed-first parallel plan; user-invoked.
 
 **Code quality & planning**
 

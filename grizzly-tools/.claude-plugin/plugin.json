@@ -1,7 +1,7 @@
 {
   "name": "grizzly-tools",
   "description": "General-purpose toolkit useful on any project: reasoning lenses, debugging discipline, code craftsmanship, test and CI discipline, planning/process, and LLM-content authoring — plus supporting agents.",
-  "version": "0.12.3",
+  "version": "0.13.0",
   "author": {
     "name": "Grizzly Endeavors",
     "email": "bearflinn@gmail.com"
